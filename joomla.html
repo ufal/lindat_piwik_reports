@@ -1,0 +1,536 @@
+<h3>LINDAT/CLARIN Statistics</h3>
+<div id="last_updated"></div>
+<hr>
+<div class="pull-right" style="margin: 0px;"><h4 style="display: inline"><span class="label label-success">Showing statistics for <span id="current_span" class="current_span"></span></span></h4> <a id="current_span_btn" style="display: none;" class='btn btn-xs btn-primary'><strong>Back</strong></a></div>
+<ul id="statistics_tab" class="nav nav-tabs" role="tablist">
+	<li role="presentation" class="active"><a href="#overall"
+		aria-controls="overall" role="tab" data-toggle="tab">Overall</a></li>
+	<li role="presentation"><a href="#repository"
+		aria-controls="repository" role="tab" data-toggle="tab">Repository (Views)</a></li>
+	<li role="presentation"><a href="#downloads"
+		aria-controls="downloads" role="tab" data-toggle="tab">Repository (Downloads)</a></li>
+	<li role="presentation"><a href="#lrt"
+		aria-controls="lrt" role="tab" data-toggle="tab">LRT</a></li>		
+	<li role="presentation"><a href="#services"
+		aria-controls="services" role="tab" data-toggle="tab">Services</a></li>
+	<li role="presentation"><a href="#others" aria-controls="others"
+		role="tab" data-toggle="tab">Others</a></li>
+	<li role="presentation"><a href="#notes" aria-controls="others"
+		role="tab" data-toggle="tab">Notes</a></li>
+		
+</ul>
+<div class="tab-content">
+	<div role="tabpanel" class="tab-pane active" id="overall">
+		<div class="alert alert-warning">
+			<strong>
+			This overall report comprised of all statistics from LINDAT/CLARIN pages i.e. the main website, repository (including downloads) and pages of services.
+			<br>			
+			It does not includes OAI and REST counts, except for 2014 where OAI requests are part of the report.
+			</strong>    
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Page Views Over Time</strong><span class="current_span pull-right"></span></div>
+  					<div class="panel-body">
+						<div id="overall_views_chart" style="width: 100%; height: 250px;">
+						</div>
+  						<div class="alert alert-info"><i class="fa fa-info-circle"></i> <strong>Click on a data item to summarize by year / month.</strong></div>						
+  					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Important Metrics</strong></div>
+  					<div class="panel-body">
+						<div id="overall_visits_count"
+							style="display: none; width: 100%; height: 215px; margin-top: 10px; padding: 10px;">
+							<table class="table table-striped"></table>
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on a metric name to show its definition.</strong></div>
+							<div class='alert alert-warning'><strong>The Page Views and Unique Page Views also included the Downloads and Unique Download counts, which are displayed separately in second row.</strong></div>
+						</div>
+  					</div>
+				</div>			
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">			
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Views of major categories</strong></div>
+  					<div class="panel-body">
+						<div id="overall_distribution_chart" style="width: 100%; height: 250px;">
+						</div>
+						<div class="alert alert-warning"><strong>Please note that these four categories are not sum up to total page views shown above. These are just the major categories that have their own reports in separate tabs.</strong></div>
+  					</div>
+				</div>			
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Country Wise Visits</strong></div>
+  					<div class="panel-body">
+						<div id="overall_visits_map"
+							style="display: none; box-shadow: 3px 3px 1px #dadada; width: 100%; height: 215px; margin-top: 10px; border: 2px solid #999999">							
+						</div>
+						<div id="overall_visits_map_cz"
+							style="display: none; background-color: #f7f7f7; padding: 10px; font-size: 110%; border: 2px solid #999999; box-shadow: 3px 3px 1px #dadada;">
+						</div>						
+  					</div>
+				</div>						
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Most visited URLs</strong> <span id="overall_accessed_url_count"></span></div>
+  					<div class="panel-body">
+						<div id="overall_accessed_url"
+							style="display: none; width: 100%;">
+							<div class='alert alert-warning' style='margin-top: 0px;'>
+								<strong>There can be a slight difference in absolute total of this table from the above displayed Page Views. It is due to the fact that
+								some Page URL statistics are not recorded properly in 2014 data.
+								</strong>
+								<br>
+								<strong>"- Others" at the end of a label means that many sub URLs are accumulated based on common prefix</strong>
+							</div>
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on the values to see percentages.</strong></div>							
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+  					</div>
+				</div>									
+			</div>
+		</div>
+	</div>
+	<div role="tabpanel" class="tab-pane" id="repository">
+		<div class="alert alert-warning">
+			<strong>
+			This report consists of the repository views excluding the downloads. For downloads see the next tab.   
+			<br>			
+			OAI requests are not included except for 2014.
+			</strong>    
+		</div>	
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Page Views Over Time</strong><span class="current_span pull-right"></span></div>
+  					<div class="panel-body">
+						<div id="repository_views_chart" style="width: 100%; height: 250px;">
+						</div>
+						<div class="alert alert-info"><i class="fa fa-info-circle"></i> <strong>Click on a data item to summarize by year / month.</strong></div>
+  					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Important Metrics</strong></div>
+  					<div class="panel-body">
+						<div id="repository_visits_count"
+							style="display: none; width: 100%; height: 215px; margin-top: 10px; padding: 10px;">
+							<table class="table table-striped"></table>
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on a metric name to show its definition.</strong></div>
+						</div>
+  					</div>
+				</div>			
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Country Wise Visits</strong></div>
+  					<div class="panel-body">
+						<div id="repository_visits_map"
+							style="display: none; box-shadow: 3px 3px 1px #dadada; width: 100%; height: 215px; margin-top: 10px; border: 2px solid #999999">
+						</div>
+						<div id="repository_visits_map_cz"
+							style="display: none; background-color: #f7f7f7; padding: 10px; font-size: 110%; border: 2px solid #999999; box-shadow: 3px 3px 1px #dadada;">
+						</div>												
+  					</div>
+				</div>						
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Most Visited Items</strong> <span id="repository_accessed_url_count"></span></div>
+  					<div class="panel-body">
+						<div id="repository_accessed_url"
+							style="display: none; width: 100%;">
+							<div class='alert alert-warning' style='margin-top: 0px;'>
+								<strong>This table is showing only the most visited items while the above data also includes other repository pages like the home page and search page etc.
+								That is why the overall total of this table is less than the Page Views shown above.</strong>
+								<br>
+								<strong>"- Others" at the end of a label means that many sub URLs are accumulated based on common prefix</strong>
+							</div>							
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on the values to see percentages.</strong></div>														
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+  					</div>
+				</div>									
+			</div>
+		</div>			
+	</div>
+	<div role="tabpanel" class="tab-pane" id="downloads">
+		<div class="alert alert-warning">
+			<strong>
+			The download statistics are based on the tracking request PIWIK received from the JAVA API directly from DSpace. The download counts also contain hits from bots. 			
+			</strong>    
+		</div>	
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Downloads Over Time</strong><span class="current_span pull-right"></span></div>
+  					<div class="panel-body">
+						<div id="downloads_chart" style="width: 100%; height: 250px;">
+						</div>
+						<div class="alert alert-info"><i class="fa fa-info-circle"></i> <strong>Click on a data item to summarize by year / month.</strong></div>
+  					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Important Metrics</strong></div>
+  					<div class="panel-body">
+						<div id="downloads_count"
+							style="display: none; width: 100%; height: 215px; margin-top: 10px; padding: 10px;">
+							<table class="table table-striped"></table>
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on a metric name to show its definition.</strong></div>
+						</div>
+  					</div>
+				</div>			
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Country Wise Visits</strong></div>
+  					<div class="panel-body">
+						<div id="downloads_map"
+							style="display: none; box-shadow: 3px 3px 1px #dadada; width: 100%; height: 215px; margin-top: 10px; border: 2px solid #999999">
+						</div>
+						<div id="downloads_map_cz"
+							style="display: none; background-color: #f7f7f7; padding: 10px; font-size: 110%; border: 2px solid #999999; box-shadow: 3px 3px 1px #dadada;">
+						</div>																		
+  					</div>
+				</div>						
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Most Downloaded Bitstreams</strong> <span id="downloads_url_count"></span></div>
+  					<div class="panel-body">
+						<div id="downloads_url"
+							style="display: none; width: 100%;">
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i>&nbsp;
+							<strong>Hover on the values to see percentages.</strong>
+							<br>
+							<strong>Clicking on a link will take you to the item page of the particular bitstream.</strong>
+							</div>
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+  					</div>
+				</div>									
+			</div>
+		</div>						
+	</div>
+	<div role="tabpanel" class="tab-pane" id="lrt">
+		<div class="alert alert-warning">
+			<strong>
+			This is a special report for LRT items in the repository. The report is generated based on URL pattern matching; all repository URLs matching "lindat.mff.cuni.cz/repository/*LRT-*" are included in this report. 			
+			</strong>    
+		</div>		
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Page Views Over Time</strong><span class="current_span pull-right"></span></div>
+  					<div class="panel-body">
+						<div id="lrt_views_chart" style="width: 100%; height: 250px;">
+						</div>
+						<div class="alert alert-info"><i class="fa fa-info-circle"></i> <strong>Click on a data item to summarize by year / month.</strong></div>
+  					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Important Metrics</strong></div>
+  					<div class="panel-body">
+						<div id="lrt_visits_count"
+							style="display: none; width: 100%; height: 215px; margin-top: 10px; padding: 10px;">
+							<table class="table table-striped"></table>
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on a metric name to show its definition.</strong></div>
+						</div>
+  					</div>
+				</div>			
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Downloads Over Time</strong><span class="current_span pull-right"></span></div>
+  					<div class="panel-body">
+						<div id="lrt_downloads_chart" style="width: 100%; height: 250px;">
+						</div>
+  					</div>
+				</div>
+			</div>		
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Country Wise Visits</strong></div>
+  					<div class="panel-body">
+						<div id="lrt_visits_map"
+							style="display: none; box-shadow: 3px 3px 1px #dadada; width: 100%; height: 215px; margin-top: 10px; border: 2px solid #999999">
+						</div>
+						<div id="lrt_visits_map_cz"
+							style="display: none; background-color: #f7f7f7; padding: 10px; font-size: 110%; border: 2px solid #999999; box-shadow: 3px 3px 1px #dadada;">
+						</div>																								
+  					</div>
+				</div>						
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Most Visited Items</strong> <span id="lrt_accessed_url_count"></span></div>
+  					<div class="panel-body">
+						<div id="lrt_accessed_url"
+							style="display: none; width: 100%;">
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on the values to see percentages.</strong></div>														
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+  					</div>
+				</div>									
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Most Downloaded Bitstreams</strong> <span id="lrt_download_url_count"></span></div>
+  					<div class="panel-body">
+						<div id="lrt_download_url"
+							style="display: none; width: 100%;">
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i>&nbsp;
+							<strong>Hover on the values to see percentages.</strong>
+							<br>
+							<strong>Clicking on a link will take you to the item page of the particular bitstream.</strong>
+							</div>																												
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+  					</div>
+				</div>									
+			</div>			
+		</div>			
+	</div>	
+	<div role="tabpanel" class="tab-pane" id="services">
+		<div class="alert alert-warning">
+			<strong>
+			The services report is also generated based on URL pattern matching; all URLs matching "lindat.mff.cuni.cz/services" are included in this report. 			
+			</strong>    
+		</div>			
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Page Views Over Time</strong><span class="current_span pull-right"></span></div>
+  					<div class="panel-body">
+						<div id="services_views_chart" style="width: 100%; height: 250px;">
+						</div>
+						<div class="alert alert-info"><i class="fa fa-info-circle"></i> <strong>Click on a data item to summarize by year / month.</strong></div>
+  					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Important Metrics</strong></div>
+  					<div class="panel-body">
+						<div id="services_visits_count"
+							style="display: none; width: 100%; height: 215px; margin-top: 10px; padding: 10px;">
+							<table class="table table-striped"></table>
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on a metric name to show its definition.</strong></div>
+						</div>
+  					</div>
+				</div>			
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Country Wise Visits</strong></div>
+  					<div class="panel-body">
+						<div id="services_visits_map"
+							style="display: none; box-shadow: 3px 3px 1px #dadada; width: 100%; height: 215px; margin-top: 10px; border: 2px solid #999999">
+						</div>
+						<div id="services_visits_map_cz"
+							style="display: none; background-color: #f7f7f7; padding: 10px; font-size: 110%; border: 2px solid #999999; box-shadow: 3px 3px 1px #dadada;">
+						</div>																														
+  					</div>
+				</div>						
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Most Accessed Services</strong> <span id="services_visits_urls_count"></span></div>
+  					<div class="panel-body">
+						<div id="services_visits_urls"
+							style="display: none; width: 100%;">
+							<div class='alert alert-warning' style='margin-top: 0px;'><strong>"- Others" at the end of a label means that many sub URLs are accumulated based on common prefix</strong></div>
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on the values to see percentages.</strong></div>														
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+  					</div>
+				</div>									
+			</div>
+		</div>										
+	</div>
+	<div role="tabpanel" class="tab-pane" id="others">
+		<div class="alert alert-warning">
+			<strong>
+			Some of the tracking request are coming from sites not hosted on lindat.mff.cuni.cz server, because of the common theme. This report consists of all such requests. 			 			
+			</strong>    
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Page Views Over Time</strong><span class="current_span pull-right"></span></div>
+  					<div class="panel-body">
+						<div id="others_views_chart" style="width: 100%; height: 250px;">
+						</div>
+						<div class="alert alert-info"><i class="fa fa-info-circle"></i> <strong>Click on a data item to summarize by year / month.</strong></div>
+  					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Important Metrics</strong></div>
+  					<div class="panel-body">
+						<div id="others_visits_count"
+							style="display: none; width: 100%; height: 215px; margin-top: 10px; padding: 10px;">
+							<table class="table table-striped"></table>
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on a metric name to show its definition.</strong></div>
+						</div>
+  					</div>
+				</div>			
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Country Wise Visits</strong></div>
+  					<div class="panel-body">
+						<div id="others_visits_map"
+							style="display: none; box-shadow: 3px 3px 1px #dadada; width: 100%; height: 215px; margin-top: 10px; border: 2px solid #999999">
+						</div>
+						<div id="others_visits_map_cz"
+							style="display: none; background-color: #f7f7f7; padding: 10px; font-size: 110%; border: 2px solid #999999; box-shadow: 3px 3px 1px #dadada;">
+						</div>																																				
+  					</div>
+				</div>						
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12">
+				<div class="panel panel-default">
+  					<div class="panel-heading"><strong>Most Accessed URLs</strong> <span id="others_visits_urls_count"></span></div>
+  					<div class="panel-body">
+						<div id="others_visits_urls"
+							style="display: none; width: 100%;">
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on the values to see percentages.</strong></div>							
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+  					</div>
+				</div>									
+			</div>
+		</div>
+	</div>
+	
+	<div role="tabpanel" class="tab-pane" id="notes">
+		<ul class="list-group" style="margin-top: 20px;">
+			<li class="list-group-item">
+				<strong>Why 2014 counts are so high?</strong><br>
+				In 2014, we were not doing proper filtering of tracking requests. A lot of requests part of our monitoring activities end up in Piwik records.
+				Also, during that period OAI requests were also sent to the main Piwik website. We have also experienced crawling from bots/spiders that also affected the overall counts.   
+			</li>
+		</ul>		
+	</div>	
+</div>
+
+<style type="text/css" scoped>
+.tab-pane>div {
+	margin-top: 20px;
+}
+
+.tab-content {
+	margin-bottom: 20px;
+}
+
+.big-font {
+	font-size: 110%;
+	font-weight: bold;
+}
+  
+.tooltip-inner {
+  font-weight: bold;
+}
+
+li.active {
+   font-weight: bold;
+}
+
+.row {
+    display: -webkit-flex;
+    display: flex;
+}
+
+.row>div>.panel {
+	height: 100%;
+}
+
+#lrt_accessed_url td, #lrt_accessed_url th, #lrt_download_url td, #lrt_download_url th {
+	font-size: 90%;
+} 
+
+.most_accessed {
+ 	height:500px;
+ 	width: 100%;
+ 	display: -moz-groupbox;
+ 	position: relative;
+}
+
+.most_accessed tbody {
+	height: 500px;
+	width: 100%;
+	overflow-y: scroll;
+	position: absolute;
+}
+
+.most_accessed tr {
+	width: 100%;
+	display: inline-table;
+	table-layout: fixed;
+}
+
+.panel-body .alert:first-child {
+	margin-top: 0px;
+}
+
+.panel-body .alert:last-child {
+	margin-bottom: 0px;
+} 
+</style>
