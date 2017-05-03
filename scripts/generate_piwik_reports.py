@@ -1,11 +1,11 @@
 import argparse
 from piwik.analytics import Analytics
 from datetime import date, timedelta
-from collections import defaultdict
-from json import dumps
-
+from json import dump, dumps, load
+from copy import deepcopy
 
 today = date.today().strftime('%Y-%m-%d')
+update_file = None
 
 
 def parse_args():
@@ -73,6 +73,15 @@ def parse_args():
                         help='only count base urls',
                         default=0
                         )
+    parser.add_argument('--update',
+                        help='if available will use the update-file parameter to read the already available report',
+                        default=False,
+                        action='store_true'
+                        )
+    parser.add_argument('--update-file',
+                        help='filename of the report to be updated',
+                        default=None
+                        )
     return parser.parse_args()
 
 
@@ -95,22 +104,35 @@ def main():
         pa.set_param('segment', config.segment)
     if config.columns:
         pa.set_param('showColumns', config.columns)
+
+    report = None
     response = pa.get()
 
-    report = defaultdict(lambda: defaultdict(dict))
-    report['total'] = defaultdict(lambda: defaultdict(dict))
-    report['years'] = defaultdict(lambda: defaultdict(dict))
-
-    if ',' in config.idSite:
-        for key in response.keys():
-            iterate_response(response[key], report)
+    if config.update:
+        with open(config.update_file) as data_file:
+            report = load(data_file)
+        if ',' in config.idSite:
+            for key in response.keys():
+                iterate_response_remove_counts(response[key], report, remove_counts)
+        else:
+            iterate_response_remove_counts(response, report, remove_counts)
     else:
-        iterate_response(response, report)
+        report = dict()
 
-    print(dumps(report))
+        if ',' in config.idSite:
+            for key in response.keys():
+                iterate_response(response[key], report, add_counts)
+        else:
+            iterate_response(response, report, add_counts)
+
+    if config.update:
+        with open(config.update_file, 'w', encoding='utf8') as data_file:
+            dump(report, data_file, indent=4, ensure_ascii=False)
+    else:
+        print(dumps(report))
 
 
-def iterate_response(response, report):
+def iterate_response(response, report, function):
 
     keys = response.keys()
 
@@ -120,69 +142,134 @@ def iterate_response(response, report):
         year = dmy[0]
         row = response[key]
         # total
-        add_counts(row, report['total'])
+        if 'total' not in report:
+            report['total'] = dict()
+        function(row, report['total'])
         # year total
-        add_counts(row, report['years'][year])
+        if 'years' not in report:
+            report['years'] = dict()
+        if year not in report['years']:
+            report['years'][year] = dict()
+        function(row, report['years'][year])
         if len(dmy) > 1:
             month = dmy[1]
             if 'months' not in report['years'][year]:
-                report['years'][year]['months'] = defaultdict(lambda: defaultdict(dict))
+                report['years'][year]['months'] = dict()
+            if month not in report['years'][year]['months']:
+                report['years'][year]['months'][month] = dict()
             # month total
-            add_counts(row, report['years'][year]['months'][month])
+            function(row, report['years'][year]['months'][month])
         if len(dmy) > 2:
             day = dmy[2]
             if 'days' not in report['years'][year]['months'][month]:
-                report['years'][year]['months'][month]['days'] = defaultdict(lambda: defaultdict(dict))
+                report['years'][year]['months'][month]['days'] = dict()
+            if day not in report['years'][year]['months'][month]['days']:
+                report['years'][year]['months'][month]['days'][day] = dict()
             # day count
-            add_counts(row, report['years'][year]['months'][month]['days'][day])
+            function(row, report['years'][year]['months'][month]['days'][day])
 
 
 def add_counts(row, report):
-    try:
-        if config.groupBy:
-            lc = config.groupBy
-            tc = []
-            if config.textColumns:
-                tc = config.textColumns.split(',')
-            for cc in config.countColumns.split(','):
-                if isinstance(row, dict):
-                    group_by = row[lc]
+    if config.groupBy:
+        lc = config.groupBy
+        tc = []
+        if config.textColumns:
+            tc = config.textColumns.split(',')
+        for cc in config.countColumns.split(','):
+            if isinstance(row, dict):
+                group_by = row[lc]
+                if config.ignoreURLQueryStrings == '1':
+                    group_by = group_by.split('?')[0]
+                    if group_by not in report:
+                        report[group_by] = dict()
+                    if len(tc) > 0:
+                        report[group_by].update({tcc: row[tcc].split('?')[0] for tcc in tc if tcc in r})
+                else:
+                    if group_by not in report:
+                        report[group_by] = dict()
+                    if len(tc) > 0:
+                        report[group_by].update({tcc: row[tcc] for tcc in tc if tcc in r})
+                if cc in report[group_by]:
+                    report[group_by][cc] += row[cc]
+                else:
+                    report[group_by][cc] = row[cc]
+            elif isinstance(row, list):
+                for r in row:
+                    group_by = r[lc]
                     if config.ignoreURLQueryStrings == '1':
                         group_by = group_by.split('?')[0]
-                        report[group_by].update({tcc: row[tcc].split('?')[0] for tcc in tc if tcc in r})
-                    else:
-                        report[group_by].update({tcc: row[tcc] for tcc in tc if tcc in r})
-                    if cc in report[group_by]:
-                        report[group_by][cc] += row[cc]
-                    else:
-                        report[group_by][cc] = row[cc]
-                elif isinstance(row, list):
-                    for r in row:
-                        group_by = r[lc]
-                        if config.ignoreURLQueryStrings == '1':
-                            group_by = group_by.split('?')[0]
+                        if group_by not in report:
+                            report[group_by] = dict()
+                        if len(tc) > 0:
                             report[group_by].update({tcc: r[tcc].split('?')[0] for tcc in tc if tcc in r})
-                        else:
-                            report[group_by].update({tcc: r[tcc] for tcc in tc if tcc in r})
-                        if cc in report[group_by]:
-                            report[group_by][cc] += r[cc]
-                        else:
-                            report[group_by][cc] = r[cc]
-        else:
-            for cc in config.countColumns.split(','):
-                if isinstance(row, dict):
-                    if cc in report:
-                        report[cc] += row[cc]
                     else:
-                        report[cc] = row[cc]
-                elif isinstance(row, list):
-                    for r in row:
-                        if cc in report:
-                            report[cc] += r[cc]
-                        else:
-                            report[cc] = r[cc]
-    except KeyError:
-        return
+                        if group_by not in report:
+                            report[group_by] = dict()
+                        if len(tc) > 0:
+                            report[group_by].update({tcc: r[tcc] for tcc in tc if tcc in r})
+                    if cc in report[group_by]:
+                        report[group_by][cc] += r[cc]
+                    else:
+                        report[group_by][cc] = r[cc]
+    else:
+        for cc in config.countColumns.split(','):
+            if isinstance(row, dict):
+                if cc in report:
+                    report[cc] += row[cc]
+                else:
+                    report[cc] = row[cc]
+            elif isinstance(row, list):
+                for r in row:
+                    if cc in report:
+                        report[cc] += r[cc]
+                    else:
+                        report[cc] = r[cc]
+
+
+def iterate_response_remove_counts(response, report, function):
+
+    keys = response.keys()
+
+    # lazy counting -- can be fast
+    for key in keys:
+        dmy = key.split('-')
+        year = dmy[0]
+        if len(dmy) > 2:
+            day = dmy[2]
+            month = dmy[1]
+            # day count
+            if day in report['years'][year]['months'][month]['days']:
+                row = deepcopy(report['years'][year]['months'][month]['days'][day])
+                function(row, report['years'][year]['months'][month]['days'][day])
+                function(row, report['years'][year]['months'][month])
+                function(row, report['years'][year])
+                function(row, report['total'])
+        elif len(dmy) > 1:
+            month = dmy[1]
+            if month in report['years'][year]['months']:
+                row = deepcopy(report['years'][year]['months'][month])
+                function(row, report['years'][year]['months'][month])
+                function(row, report['years'][year])
+                function(row, report['total'])
+        else:
+            if year not in report['years']:
+                row = deepcopy(report['years'][year])
+                function(row, report['years'][year])
+                function(row, report['total'])
+
+
+def remove_counts(row, report):
+
+    for key in row.keys():
+        if key in report:
+            if isinstance(row[key], dict):
+                for innerKey in row[key].keys():
+                    if innerKey in report[key]:
+                        if isinstance(row[key][innerKey], int):
+                            report[key][innerKey] -= row[key][innerKey]
+            else:
+                if isinstance(row[key], int):
+                    report[key] -= row[key]
 
 
 if __name__ == '__main__':
