@@ -1,3 +1,5 @@
+#!/usr/bin/python3.5
+
 import argparse
 from piwik.analytics import Analytics
 from datetime import date, timedelta
