@@ -12,6 +12,7 @@ from urllib.parse import unquote_plus
 def create_query(dmy, typ, site_id=None, segment=None, handle=None):
     q = "+type: " + typ
     if dmy:
+        dmy = [int(x) for x in dmy]
         q += " AND +year: " + str(dmy[0])
         if len(dmy) > 1:
             q += " AND +month: " + str(dmy[1])
