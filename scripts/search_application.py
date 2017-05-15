@@ -2,10 +2,17 @@ from luc import searcher
 from flask import Flask, request, jsonify
 from datetime import date
 
-application = Flask(__name__)
+app = Flask(__name__)
 index = "path_to_index_folder"
 
-@application.route('/views')
+
+@app.route('/')
+def home():
+    with open(index + "/last_updated.txt") as f:
+        return f.read()
+
+
+@app.route('/views')
 def search_views():
     s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
@@ -16,7 +23,7 @@ def search_views():
     return jsonify(s.search_views(dmy=dmy, site_id=sid, segment=seg))
 
 
-@application.route('/visits')
+@app.route('/visits')
 def search_visits():
     s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
@@ -27,7 +34,7 @@ def search_visits():
     return jsonify(s.search_visits(dmy=dmy, site_id=sid, segment=seg))
 
 
-@application.route('/country')
+@app.route('/country')
 def search_country():
     s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
@@ -38,7 +45,7 @@ def search_country():
     return jsonify(s.search_country(dmy=dmy, site_id=sid, segment=seg))
 
 
-@application.route('/urls')
+@app.route('/urls')
 def search_urls():
     s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
@@ -49,7 +56,7 @@ def search_urls():
     return jsonify(s.search_urls(dmy=dmy, site_id=sid, segment=seg))
 
 
-@application.route('/handle')
+@app.route('/handle')
 def search_hanlde():
     s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
@@ -90,6 +97,6 @@ def which_segment(seg):
     return seg, sid
 
 if __name__ == '__main__':
-    application.run(host='0.0.0.0')
+    app.run(host='0.0.0.0')
 
 

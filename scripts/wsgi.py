@@ -1,4 +1,4 @@
-from search_application import application
+from search_application import app as application
 
 
 if __name__ == "__main__":

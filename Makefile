@@ -134,4 +134,4 @@ generate_others_reports:
 
 
 all: generate_over_all_reports generate_repository_reports generate_LRT_reports generate_services_reports generate_others_reports
-	date > $(REPORTS_DIR)/last_updated.txt
+	date > $(INDEX)/last_updated.txt
