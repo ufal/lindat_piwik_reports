@@ -33,6 +33,9 @@ var LRT_downloads_visits = null;
 var LRT_downloads_countrywise = null;
 var LRT_downloaded_urls = null;
 
+var start_date = '2014-01-01';
+var today = new Date();
+var end_date = date.getFullYear() + '-' + date.getMonth() + '-' + date.getDate();
 
 var metrices = {
 				"Page Views": "The number of times a page was visited.",
@@ -50,119 +53,119 @@ jQuery(document).ready(function (){
 	
 	$.when(
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/overall_views.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/views", function( data ) {
 			overall_views = data;
 		}),
 
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/overall_visits_countrywise.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/country", function( data ) {
 			overall_visits_countrywise = data;
 		}),
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/overall_accessed_urls.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/urls", function( data ) {
 			overall_accessed_urls = data;
 		}),		
 
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/repository_views.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/views?segment=repository", function( data ) {
 			repository_views = data;
 		}),
 
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/repository_visits_countrywise.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/country?segment=repository", function( data ) {
 			repository_visits_countrywise = data;
 		}),		
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/repository_accessed_urls.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/urls?segment=repository", function( data ) {
 			repository_accessed_urls = data;
 		}),		
 
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/repository_downloads.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/views?segment=downloads", function( data ) {
 			repository_downloads = data;
 		}),
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/repository_downloads_countrywise.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/country?segment=downloads", function( data ) {
 			repository_downloads_countrywise = data;
 		}),	
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/overall_downloaded_urls.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/urls?segment=downloads", function( data ) {
 			overall_downloaded_urls = data;
 		}),		
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/services_views.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/views?segment=services", function( data ) {
 			services_views = data;
 		}),
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/services_visits_countrywise.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/country?segment=services", function( data ) {
 			services_visits_countrywise = data;
 		}),
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/services_accessed_urls.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/urls?segment=services", function( data ) {
 			services_accessed_urls = data;
 		}),				
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/other_views.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/views?segment=others", function( data ) {
 			other_views = data;
 		}),
 
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/other_visits_countrywise.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/country?segment=others", function( data ) {
 			other_visits_countrywise = data;
 		}),
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/other_accessed_urls.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/urls?segment=others", function( data ) {
 			other_accessed_urls = data;
 		}),						
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/LRT_views.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/views?segment=lrt", function( data ) {
 			LRT_views = data;
 		}),
 
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/LRT_visits_countrywise.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/country?segment=lrt", function( data ) {
 			LRT_visits_countrywise = data;
 		}),		
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/LRT_accessed_urls.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/urls?segment=lrt", function( data ) {
 			LRT_accessed_urls = data;
 		}),		
 
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/LRT_downloads.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/views?segment=lrt-downloads", function( data ) {
 			LRT_downloads = data;
 		}),
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/LRT_downloads_countrywise.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/country?segment=lrt-downloads", function( data ) {
 			LRT_downloads_countrywise = data;
 		}),	
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/LRT_downloaded_urls.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/urls?segment=lrt-downloads", function( data ) {
 			LRT_downloaded_urls = data;
 		}),		
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/overall_visits.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/visits", function( data ) {
 			overall_visits = data;
 		}),
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/repository_visits.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/visits?segment=repository", function( data ) {
 			repository_visits = data;
 		}),
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/repository_downloads_visits.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/visits?segment=downloads", function( data ) {
 			repository_downloads_visits = data;
 		}),				
 
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/LRT_visits.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/visits?segment=lrt", function( data ) {
 			LRT_visits = data;
 		}),
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/LRT_download_visits.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/visits?segment=lrt-downloads", function( data ) {
 			LRT_downloads_visits = data;
 		}),
 		
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/services_visits.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/visits?segment=services", function( data ) {
 			services_visits = data;
 		}),								
 
-		$.getJSON("https://lindat.mff.cuni.cz/statistics/reports/other_visits.json", function( data ) {
+		$.getJSON("https://lindat.mff.cuni.cz/statistics/visits?segment=others", function( data ) {
 			other_visits = data;
 		}),								
 
-		$.get("https://lindat.mff.cuni.cz/statistics/reports/last_updated.txt", function( data ) {
+		$.get("https://lindat.mff.cuni.cz/statistics/", function( data ) {
 			$("#last_updated").html("<h6>Last Updated: " + data + "</h6>");
 		})
 				
