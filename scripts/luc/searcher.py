@@ -40,9 +40,9 @@ def create_query(dmy, typ, site_id=None, segment=None, handle=None):
 
 class Searcher(object):
 
-    def __init__(self):
+    def __init__(self, index="indexes"):
         self.initialized = False
-        self.initialize()
+        self.initialize(index)
 
     def initialize(self, index="indexes"):
         if DirectoryReader.indexExists(SimpleFSDirectory(Paths.get(index))):

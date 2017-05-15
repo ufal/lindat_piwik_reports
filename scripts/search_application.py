@@ -1,6 +1,5 @@
 from luc import searcher
 from flask import Flask, request, jsonify
-from datetime import date
 
 app = Flask(__name__)
 index = "path_to_index_folder"
