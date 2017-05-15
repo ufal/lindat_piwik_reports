@@ -2,7 +2,8 @@ AUTH_TOKEN=[Add Piwik autorization token here]
 PIWIK_URL=http://ufal.mff.cuni.cz/piwik/index.php
 START_DATE=$(shell date -d 'yesterday' +'%Y-%m-%d')
 END_DATE=$(shell date +'%Y-%m-%d')
-SCRIPT:=/opt/custom_piwik_reports/scripts/generate_piwik_reports2.py --url=$(PIWIK_URL) --authToken=$(AUTH_TOKEN)
+INDEX=[Path to lucene indices folder]
+SCRIPT:=/opt/custom_piwik_reports/scripts/generate_piwik_reports.py --url=$(PIWIK_URL) --authToken=$(AUTH_TOKEN) --index=$(INDEX)
 
 generate_over_all_reports:
 	#overall views for all LINDAT pages + downloads

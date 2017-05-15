@@ -44,9 +44,9 @@ class Searcher(object):
         self.initialized = False
         self.initialize()
 
-    def initialize(self):
-        if DirectoryReader.indexExists(SimpleFSDirectory(Paths.get("indexes"))):
-            self.directory = DirectoryReader.open(SimpleFSDirectory(Paths.get("indexes")))
+    def initialize(self, index="indexes"):
+        if DirectoryReader.indexExists(SimpleFSDirectory(Paths.get(index))):
+            self.directory = DirectoryReader.open(SimpleFSDirectory(Paths.get(index)))
             self.searcher = IndexSearcher(self.directory)
             self.analyzer = WhitespaceAnalyzer()
             self.parser = QueryParser("type", self.analyzer)

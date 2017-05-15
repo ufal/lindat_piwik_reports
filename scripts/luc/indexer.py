@@ -12,10 +12,10 @@ from luc import searcher
 
 class Indexer(object):
 
-    def __init__(self):
-        if not os.path.exists("indexes"):
-            os.mkdir("indexes")
-        self.store = SimpleFSDirectory(Paths.get("indexes"))
+    def __init__(self, index="indexes"):
+        if not os.path.exists(index):
+            os.mkdir(index)
+        self.store = SimpleFSDirectory(Paths.get(index))
         self.analyzer = WhitespaceAnalyzer()
         self.config = IndexWriterConfig(self.analyzer)
         self.config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND)

@@ -2,12 +2,12 @@ from luc import searcher
 from flask import Flask, request, jsonify
 from datetime import date
 
-app = Flask(__name__)
+application = Flask(__name__)
+index = "path_to_index_folder"
 
-
-@app.route('/views')
+@application.route('/views')
 def search_views():
-    s = searcher.Searcher()
+    s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
     if dmy:
         dmy = dmy.split("-")
@@ -16,9 +16,9 @@ def search_views():
     return jsonify(s.search_views(dmy=dmy, site_id=sid, segment=seg))
 
 
-@app.route('/visits')
+@application.route('/visits')
 def search_visits():
-    s = searcher.Searcher()
+    s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
     if dmy:
         dmy = dmy.split("-")
@@ -27,9 +27,9 @@ def search_visits():
     return jsonify(s.search_visits(dmy=dmy, site_id=sid, segment=seg))
 
 
-@app.route('/country')
+@application.route('/country')
 def search_country():
-    s = searcher.Searcher()
+    s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
     if dmy:
         dmy = dmy.split("-")
@@ -38,9 +38,9 @@ def search_country():
     return jsonify(s.search_country(dmy=dmy, site_id=sid, segment=seg))
 
 
-@app.route('/urls')
+@application.route('/urls')
 def search_urls():
-    s = searcher.Searcher()
+    s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
     if dmy:
         dmy = dmy.split("-")
@@ -49,9 +49,9 @@ def search_urls():
     return jsonify(s.search_urls(dmy=dmy, site_id=sid, segment=seg))
 
 
-@app.route('/handle')
+@application.route('/handle')
 def search_hanlde():
-    s = searcher.Searcher()
+    s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
     if dmy:
         dmy = dmy.split("-")
@@ -90,6 +90,6 @@ def which_segment(seg):
     return seg, sid
 
 if __name__ == '__main__':
-    app.run()
+    application.run(host='0.0.0.0')
 
 
