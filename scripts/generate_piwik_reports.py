@@ -42,10 +42,6 @@ def parse_args():
                         help='the integer id of your website',
                         required=True
                         )
-    parser.add_argument('--period',
-                        help='the period you request the statistics for.',
-                        default='month'
-                        )
     parser.add_argument('--date',
                         help='YYYY-MM-DD or lastX or today or yesterday',
                         default=today + ',' + today
@@ -76,7 +72,6 @@ config = parse_args()
 def main():
     pa = Analytics(url=config.url, id_site=config.idSite, token_auth=config.authToken)
     pa.set_param('date', config.date)
-    pa.set_param('period', config.period)
     pa.set_param('method', config.method)
     pa.set_param('filter_limit', '-1')
     if config.expanded:
@@ -90,8 +85,24 @@ def main():
     if config.columns:
         pa.set_param('showColumns', config.columns)
 
+    pa.set_param('period', 'year')
     response = pa.get()
+    if ',' in config.idSite:
+        for key in response.keys():
+            iterate_response(key, response[key])
+    else:
+        iterate_response(config.idSite, response)
 
+    pa.set_param('period', 'month')
+    response = pa.get()
+    if ',' in config.idSite:
+        for key in response.keys():
+            iterate_response(key, response[key])
+    else:
+        iterate_response(config.idSite, response)
+
+    pa.set_param('period', 'day')
+    response = pa.get()
     if ',' in config.idSite:
         for key in response.keys():
             iterate_response(key, response[key])
@@ -100,16 +111,14 @@ def main():
 
 
 def iterate_response(site_id, response):
-
     keys = response.keys()
-
     for key in keys:
         dmy = key.split('-')
         row = response[key]
         if row:
             ind = indexer.Indexer(config.index)
             function_to_call = getattr(ind, m2m[config.method])
-            function_to_call(site_id, dmy, row, config.segment, False)
+            function_to_call(site_id, dmy, row, config.segment)
             ind.close()
 
 

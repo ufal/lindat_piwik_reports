@@ -15,50 +15,55 @@ def home():
 def search_views():
     s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
+    period = request.args.get('period', 'year')
     if dmy:
         dmy = dmy.split("-")
     seg = request.args.get('segment', None)
     seg, sid = which_segment(seg)
-    return jsonify(s.search_views(dmy=dmy, site_id=sid, segment=seg))
+    return jsonify(s.search_views(dmy=dmy, period=period, site_id=sid, segment=seg))
 
 
 @app.route('/visits')
 def search_visits():
     s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
+    period = request.args.get('period', 'year')
     if dmy:
         dmy = dmy.split("-")
     seg = request.args.get('segment', None)
     seg, sid = which_segment(seg)
-    return jsonify(s.search_visits(dmy=dmy, site_id=sid, segment=seg))
+    return jsonify(s.search_visits(dmy=dmy, period=period, site_id=sid, segment=seg))
 
 
 @app.route('/country')
 def search_country():
     s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
+    period = request.args.get('period', 'year')
     if dmy:
         dmy = dmy.split("-")
     seg = request.args.get('segment', None)
     seg, sid = which_segment(seg)
-    return jsonify(s.search_country(dmy=dmy, site_id=sid, segment=seg))
+    return jsonify(s.search_country(dmy=dmy, period=period, site_id=sid, segment=seg))
 
 
 @app.route('/urls')
 def search_urls():
     s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
+    period = request.args.get('period', 'year')
     if dmy:
         dmy = dmy.split("-")
     seg = request.args.get('segment', None)
-    seg, sid = which_segment(seg)
-    return jsonify(s.search_urls(dmy=dmy, site_id=sid, segment=seg))
+    seg, sid = which_segment(seg, route="urls")
+    return jsonify(s.search_urls(dmy=dmy, period=period, site_id=sid, segment=seg))
 
 
 @app.route('/handle')
 def search_hanlde():
     s = searcher.Searcher(index)
     dmy = request.args.get('date', None)
+    period = request.args.get('period', 'year')
     if dmy:
         dmy = dmy.split("-")
     h = request.args.get('h')
@@ -68,19 +73,25 @@ def search_hanlde():
         sid = 2
     elif seg == "downloads":
         sid = 4
-    return jsonify(s.search_handle(dmy=dmy, site_id=sid, handle=h))
+    return jsonify(s.search_handle(dmy=dmy, period=period, site_id=sid, handle=h))
 
 
-def which_segment(seg):
+def which_segment(seg, route=None):
     sid = [2, 4]
     if seg == "repository":
-        seg = "pageUrl=@lindat.mff.cuni.cz/repository"
+        if route == "urls":
+            seg = "pageUrl=@lindat.mff.cuni.cz/repository/xmlui/handle"
+        else:
+            seg = "pageUrl=@lindat.mff.cuni.cz/repository"
         sid = 2
     elif seg == "downloads":
         seg = None
         sid = 4
     elif seg == "lrt":
-        seg = "pageUrl=@lindat.mff.cuni.cz/repository;pageUrl=@/LRT-"
+        if route == "urls":
+            seg = "pageUrl=@lindat.mff.cuni.cz/repository/xmlui/handle;pageUrl=@/LRT-"
+        else:
+            seg = "pageUrl=@lindat.mff.cuni.cz/repository;pageUrl=@/LRT-"
         sid = 2
     elif seg == "lrt-downloads":
         seg = "pageUrl=@lindat.mff.cuni.cz/repository;pageUrl=@/LRT-"
@@ -97,5 +108,3 @@ def which_segment(seg):
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
-
-

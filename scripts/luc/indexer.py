@@ -23,41 +23,11 @@ class Indexer(object):
         self.parser = QueryParser("type", self.analyzer)
         self.searcher = searcher.Searcher()
 
-    def index_views(self, site_id, date, row, segment=None, add=False):
-        ft1 = FieldType()
-        ft1.setStored(True)
-        ft1.setIndexOptions(IndexOptions.DOCS)
+    def index_views(self, site_id, date, row, segment=None):
         try:
-            q = ""
-            y = int(date[0])
-            m = int(date[1])
-            d = int(date[2])
-            doc = Document()
-            doc.add(Field("type", "views", ft1))
-            doc.add(Field("site_id", site_id, ft1))
-            doc.add(Field("year", str(y), ft1))
-            doc.add(Field("month", str(m), ft1))
-            doc.add(Field("day", str(d), ft1))
-            if segment:
-                doc.add(Field("segment", segment, ft1))
-                q = '+segment: "' + segment + '" AND '
-            else:
-                q = '-segment: [* TO *] AND '
-
-            q += "+site_id: " + site_id + " AND +type: views AND +year: " + str(y) + " AND +month: " + str(m) \
-                + " AND +day: " + str(d)
-
-            if add:
-                d = self.searcher.search(q)
-                nb_pageviews = nb_uniq_pageviews = 0
-                if len(d) > 0:
-                    nb_pageviews = d[0]["nb_pageviews"]
-                    nb_uniq_pageviews = d[0]["nb_uniq_pageviews"]
-                doc.add(StoredField("nb_pageviews", int(row["nb_pageviews"]) + int(nb_pageviews)))
-                doc.add(StoredField("nb_uniq_pageviews", int(row["nb_uniq_pageviews"]) + int(nb_uniq_pageviews)))
-            else:
-                doc.add(StoredField("nb_pageviews", int(row["nb_pageviews"])))
-                doc.add(StoredField("nb_uniq_pageviews", int(row["nb_uniq_pageviews"])))
+            doc, q = Indexer.initialize_document(site_id, date, "views", segment)
+            doc.add(StoredField("nb_pageviews", int(row["nb_pageviews"])))
+            doc.add(StoredField("nb_uniq_pageviews", int(row["nb_uniq_pageviews"])))
             self.writer.deleteDocuments(self.parser.parse(q))
             self.writer.addDocument(doc)
             self.writer.commit()
@@ -65,41 +35,15 @@ class Indexer(object):
             print("Failed in index_views")
             raise
 
-    def index_visits(self, site_id, date, row, segment=None, add=False):
-        ft1 = FieldType()
-        ft1.setStored(True)
-        ft1.setIndexOptions(IndexOptions.DOCS)
+    def index_visits(self, site_id, date, row, segment=None):
         try:
-            q = ""
-            y = int(date[0])
-            m = int(date[1])
-            d = int(date[2])
-            doc = Document()
-            doc.add(Field("type", "visits", ft1))
-            doc.add(Field("site_id", site_id, ft1))
-            doc.add(Field("year", str(y), ft1))
-            doc.add(Field("month", str(m), ft1))
-            doc.add(Field("day", str(d), ft1))
-            if segment:
-                doc.add(Field("segment", segment, ft1))
-                q = '+segment: "' + segment + '" AND '
-            else:
-                q = '-segment: [* TO *] AND '
-
-            q += "+site_id: " + site_id + " AND +type: visits AND +year: " + str(y) + " AND +month: " + str(m) \
-                + " AND +day: " + str(d)
-
-            if add:
-                d = self.searcher.search(q)
-                nb_visits = nb_uniq_visitors = 0
-                if len(d) > 0:
-                    nb_visits = d[0]["nb_visits"]
-                    nb_uniq_visitors = d[0]["nb_uniq_visitors"]
-                doc.add(StoredField("nb_visits", int(row["nb_visits"]) + int(nb_visits)))
-                doc.add(StoredField("nb_uniq_visitors", int(row["nb_uniq_visitors"]) + int(nb_uniq_visitors)))
-            else:
+            doc, q = Indexer.initialize_document(site_id, date, "visits", segment)
+            if type(row) is dict:
                 doc.add(StoredField("nb_visits", int(row["nb_visits"])))
-                doc.add(StoredField("nb_uniq_visitors", int(row["nb_uniq_visitors"])))
+                if "nb_uniq_visitors" in row:
+                    doc.add(StoredField("nb_uniq_visitors", int(row["nb_uniq_visitors"])))
+            else:
+                doc.add(StoredField("nb_visits", int(row)))
             self.writer.deleteDocuments(self.parser.parse(q))
             self.writer.addDocument(doc)
             self.writer.commit()
@@ -108,44 +52,16 @@ class Indexer(object):
             raise
 
     def index_country(self, site_id, date, row, segment=None, add=False):
-
-        ft1 = FieldType()
-        ft1.setStored(True)
-        ft1.setIndexOptions(IndexOptions.DOCS)
-
         try:
+            ft1 = FieldType()
+            ft1.setStored(True)
+            ft1.setIndexOptions(IndexOptions.DOCS)
             for r in row:
-                q = ""
-                y = int(date[0])
-                m = int(date[1])
-                d = int(date[2])
-                doc = Document()
-                doc.add(Field("type", "country", ft1))
-                doc.add(Field("site_id", site_id, ft1))
-                doc.add(Field("year", str(y), ft1))
-                doc.add(Field("month", str(m), ft1))
-                doc.add(Field("day", str(d), ft1))
+                doc, q = Indexer.initialize_document(site_id, date, "country", segment)
                 doc.add(Field("country", r["code"], ft1))
-
-                if segment:
-                    doc.add(Field("segment", segment, ft1))
-                    q = '+segment: "' + segment + '" AND '
-                else:
-                    q = '-segment: [* TO *] AND '
-
-                q += "+site_id: " + site_id + " AND +type: country AND +year: " + str(y) + " AND +month: " + str(m) \
-                    + " AND +day: " + str(d) + " AND +country: " + r["code"]
-
-                if add:
-                    d = self.searcher.search(q)
-                    nb_visits = nb_uniq_visitors = 0
-                    if len(d) > 0:
-                        nb_visits = d[0]["nb_visits"]
-                        nb_uniq_visitors = d[0]["nb_uniq_visitors"]
-                    doc.add(StoredField("nb_visits", int(r["nb_visits"]) + int(nb_visits)))
-                    doc.add(StoredField("nb_uniq_visitors", int(r["nb_uniq_visitors"]) + int(nb_uniq_visitors)))
-                else:
-                    doc.add(StoredField("nb_visits", int(r["nb_visits"])))
+                q += " AND +country: " + r["code"]
+                doc.add(StoredField("nb_visits", int(r["nb_visits"])))
+                if "nb_uniq_visitors" in r:
                     doc.add(StoredField("nb_uniq_visitors", int(r["nb_uniq_visitors"])))
                 self.writer.deleteDocuments(self.parser.parse(q))
                 self.writer.addDocument(doc)
@@ -160,28 +76,10 @@ class Indexer(object):
         ft1.setIndexOptions(IndexOptions.DOCS)
         try:
             for r in row:
-                q = ""
-                y = int(date[0])
-                m = int(date[1])
-                d = int(date[2])
-                doc = Document()
-                doc.add(Field("type", "urls", ft1))
-                doc.add(Field("site_id", site_id, ft1))
-                doc.add(Field("year", str(y), ft1))
-                doc.add(Field("month", str(m), ft1))
-                doc.add(Field("day", str(d), ft1))
+                doc, q = Indexer.initialize_document(site_id, date, "urls", segment)
                 doc.add(Field("label", quote_plus(r["label"]), ft1))
+                q += ' AND +label: ' + quote_plus(r["label"])
 
-                if segment:
-                    doc.add(Field("segment", segment, ft1))
-                    q = '+segment: "' + segment + '" AND '
-                else:
-                    q = '-segment: [* TO *] AND '
-
-                q += '+site_id: ' + site_id + ' AND +type: urls AND +year: ' + str(y) + ' AND +month: ' + str(m) \
-                    + ' AND +day: ' + str(d) + ' AND +label: ' + quote_plus(r["label"])
-
-                handle = ""
                 if "url" in r and r["url"]:
                     doc.add(Field("url", quote_plus(r["url"]), ft1))
                     q += ' AND +url: ' + quote_plus(r["url"])
@@ -194,17 +92,8 @@ class Indexer(object):
                     handle = "/".join(re.split("/|\?", handle)[2:4])
                     doc.add(Field("handle", handle, ft1))
 
-                if add:
-                    d = self.searcher.search(q)
-                    nb_visits = nb_hits = 0
-                    if len(d) > 0:
-                        nb_visits = d[0]["nb_visits"]
-                        nb_hits = d[0]["nb_hits"]
-                    doc.add(StoredField("nb_visits", int(r["nb_visits"]) + int(nb_visits)))
-                    doc.add(StoredField("nb_hits", int(r["nb_hits"]) + int(nb_hits)))
-                else:
-                    doc.add(StoredField("nb_visits", int(r["nb_visits"])))
-                    doc.add(StoredField("nb_hits", int(r["nb_hits"])))
+                doc.add(StoredField("nb_visits", int(r["nb_visits"])))
+                doc.add(StoredField("nb_hits", int(r["nb_hits"])))
 
                 self.writer.deleteDocuments(self.parser.parse(q))
                 self.writer.addDocument(doc)
@@ -216,3 +105,41 @@ class Indexer(object):
     def close(self):
         self.writer.close()
 
+    @staticmethod
+    def initialize_document(site_id, date, ty, segment=None):
+        y = m = d = None
+        q = ""
+        ft1 = FieldType()
+        ft1.setStored(True)
+        ft1.setIndexOptions(IndexOptions.DOCS)
+        doc = Document()
+        if len(date) == 3:
+            y = int(date[0])
+            m = int(date[1])
+            d = int(date[2])
+            doc.add(Field("period", "day", ft1))
+            doc.add(Field("year", str(y), ft1))
+            doc.add(Field("month", str(m), ft1))
+            doc.add(Field("day", str(d), ft1))
+            q = "+period: day AND +year: " + str(y) + " AND +month: " + str(m) + " AND +day: " + str(d)
+        elif len(date) == 2:
+            y = int(date[0])
+            m = int(date[1])
+            doc.add(Field("period", "month", ft1))
+            doc.add(Field("year", str(y), ft1))
+            doc.add(Field("month", str(m), ft1))
+            q = "+period: month AND +year: " + str(y) + " AND +month: " + str(m)
+        elif len(date) == 1:
+            y = int(date[0])
+            doc.add(Field("period", "year", ft1))
+            doc.add(Field("year", str(y), ft1))
+            q = "+period: year AND +year: " + str(y)
+        doc.add(Field("site_id", site_id, ft1))
+        doc.add(Field("type", ty, ft1))
+        if segment:
+            doc.add(Field("segment", segment, ft1))
+            q += ' AND +segment: "' + segment + '"'
+        else:
+            q += ' AND -segment: [* TO *]'
+        q += " AND +site_id: " + site_id + " AND +type: " + ty
+        return doc, q
