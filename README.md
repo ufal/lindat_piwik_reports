@@ -139,3 +139,10 @@ Not providing segment will return the overall counts combining all.
 ```
 /statistics/visits?segment=repository&period=month
 ```
+
+
+## Integration in Joomla
+
+Use the joomla.html file to create an article with piwik_charts.js javascript.
+
+jqplot is required to generate the charts.
