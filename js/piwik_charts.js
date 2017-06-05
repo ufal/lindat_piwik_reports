@@ -117,6 +117,8 @@ showTab = function(target) {
         othersTab();
     } else if(target == "#lrt") {
         lrtTab();
+    } else {
+        $("#loading").css("display", "none");
     }
     $('[data-toggle="tooltip"]').tooltip({
         placement: 'auto',
