@@ -3,7 +3,8 @@ PIWIK_URL=http://ufal.mff.cuni.cz/piwik/index.php
 START_DATE=$(shell date -d 'yesterday' +'%Y-%m-%d')
 END_DATE=$(shell date +'%Y-%m-%d')
 INDEX=[Path to lucene indices folder]
-SCRIPT:=[Path to the script folder]/generate_piwik_reports.py --url=$(PIWIK_URL) --authToken=$(AUTH_TOKEN) --index=$(INDEX)
+SCRIPT_PATH=[Path to the script folder]/generate_piwik_reports.py
+SCRIPT:=$(SCRIPT_PATH) --url=$(PIWIK_URL) --authToken=$(AUTH_TOKEN) --index=$(INDEX)
 
 generate_over_all_reports:
 	#overall views for all LINDAT pages + downloads
