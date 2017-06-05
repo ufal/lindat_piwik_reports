@@ -75,3 +75,67 @@ sudo make SCRIPT_PATH=[PATH]/scripts/generate_piwik_reports.py INDEX=[INDEXES_PA
 ```
 
 Create a cron job to periodically retrive the statistics. Set the START and END DATE occordingly.
+
+## API
+
+### /statistics/
+The default route will return the timestamp of last run of the cron job.
+
+### /statistics/views
+Return the yearly page views of all services.
+```
+Generated using the Actions.get PIWIK command.
+returns nb_pageviews and nb_uniq_pageviews
+```
+
+### /statistics/visits
+Return the yearly visits of all services.
+```
+Generated using the VisitsSummary.get PIWIK command.
+returns nb_visits and nb_uniq_visitors
+```
+Please note that nb_uniq_visitors metric for years is not enable by default in PIWIK.
+
+### /statistics/country
+Return the yearly countrywise visits.
+```
+Generated using the UserCountry.getCountry PIWIK command.
+returns nb_visits and nb_uniq_visitors with two letter country code.
+```
+
+### /statistics/urls
+Return the yearly hits by specific urls.
+```
+Generated using the Actions.getPageUrls PIWIK command.
+returns nb_hits and nb_visits with label of the page.
+```
+nb_hits is equivalent to nb_pageviews
+
+### /statistics/handle?h=[handle]
+Return the views for specific handle.
+
+
+## API Params
+All the above routes can be customized using following url parameters.
+
+### period 
+year, month or day
+
+### date
+YYYY[-MM][-DD]
+
+month and day is optional.
+
+### segment
+Segment can have the following values:
+
+repository, downloads, lrt, lrt-downloads, others, services
+
+Not providing segment will return the overall counts combining all.
+
+
+### Example
+#### Return monthly visits for repository
+```
+/statistics/visits?segment=repository&period=month
+```
