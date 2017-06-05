@@ -131,6 +131,8 @@ Segment can have the following values:
 
 repository, downloads, lrt, lrt-downloads, others, services
 
+for /handle the segment can be views or downloads
+
 Not providing segment will return the overall counts combining all.
 
 
