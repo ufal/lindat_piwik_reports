@@ -7,6 +7,7 @@ from org.apache.lucene.search import IndexSearcher
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.queryparser.classic import QueryParser
 from urllib.parse import unquote_plus
+import re
 
 
 def create_query(dmy, typ, period="year", site_id=None, segment=None, handle=None):
@@ -247,6 +248,19 @@ class Searcher(object):
             else:
                 url = unquote_plus(doc["label"]).split("?")[0]
 
+            if ".continue" in url:
+                url = "/".join(url.split("/")[:-1])
+
+            if url.startswith("services"):
+                if url.startswith("services/treex-web/api/v1/results"):
+                    url = "services/treex-web/api/v1/results"
+                if url.startswith("services/treex-web/result"):
+                    url = "services/treex-web/result"
+
+                url = re.sub(r'(services/pmltq/index#!/treebank/.+/query)/.+', '\\1', url)
+
+            url = re.sub(r'/(\./)+', '/', url)
+
             if period == 'year':
                 if year not in results:
                     results[year] = {}
@@ -281,9 +295,9 @@ class Searcher(object):
 
         return results
 
-    def search_handle(self, dmy=None, period='year', site_id=None, handle=None):
+    def search_handle(self, dmy=None, period='year', site_id=None, handle=None, segment=None):
 
-        q = create_query(dmy, "urls", period=period, site_id=site_id, handle=handle)
+        q = create_query(dmy, "urls", period=period, site_id=site_id, handle=handle, segment=segment)
         print(q)
         docs = self.search(q)
 

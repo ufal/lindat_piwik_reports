@@ -82,7 +82,7 @@ loadData = function(what, date, period, segment) {
     }
     if(!(period in already_loaded_dates[segment][what] && date in already_loaded_dates[segment][what][period])) {
         return $.getJSON(base_url + what + params, function(data) {
-            loaded_data[segment][what] = $.extend(true, loaded_data[segment][what], data);
+            loaded_data[segment][what] = $.extend(true, loaded_data[segment][what], data["response"]);
             if(!(period in already_loaded_dates[segment][what])) already_loaded_dates[segment][what][period] = {};
             if(!(date in already_loaded_dates[segment][what][period])) already_loaded_dates[segment][what][period][date] = true;
         });
