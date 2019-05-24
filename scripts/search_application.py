@@ -15,6 +15,13 @@ def home():
         return f.read()
 
 
+@app.route('/reload')
+def reload():
+    global s
+    s = searcher.Searcher(index)
+    return "done"
+
+
 @app.route('/views')
 def search_views():
     dmy = request.args.get('date', None)
@@ -77,13 +84,23 @@ def search_hanlde():
     h = request.args.get('h')
     seg = request.args.get('segment', None)
     sid = [2, 4]
+    res = dict()
     if seg == "views":
         sid = 2
         segment = "pageUrl=@lindat.mff.cuni.cz/repository/xmlui/handle"
+        res["response"] = s.search_handle(dmy=dmy, period=period, site_id=sid, handle=h, segment=segment)
     elif seg == "downloads":
         sid = 4
-    res = dict()
-    res["response"] = s.search_handle(dmy=dmy, period=period, site_id=sid, handle=h, segment=segment)
+        res["response"] = s.search_handle(dmy=dmy, period=period, site_id=sid, handle=h, segment=segment)
+    else:
+        res = dict()
+        sid = 2
+        segment = "pageUrl=@lindat.mff.cuni.cz/repository/xmlui/handle"
+        res["response"] = {}
+        res["response"]["views"] = s.search_handle(dmy=dmy, period=period, site_id=sid, handle=h, segment=segment)
+        sid = 4
+        res["response"]["downloads"] = s.search_handle(dmy=dmy, period=period, site_id=sid, handle=h, segment=None)
+
     return jsonify(res)
 
 

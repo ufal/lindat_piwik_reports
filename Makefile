@@ -17,8 +17,11 @@ generate_over_all_reports:
 		--method=VisitsSummary.get
 	#overall views country wise
 	$(SCRIPT) --date=$(START_DATE),$(END_DATE) \
-		--idSite=2,4 --columns=code,nb_uniq_visitors,nb_visits \
+		--idSite=2 --columns=code,nb_uniq_visitors,nb_visits \
 		--method=UserCountry.getCountry
+	$(SCRIPT) --date=$(START_DATE),$(END_DATE) \
+                --idSite=4 --columns=code,nb_uniq_visitors,nb_visits \
+                --method=UserCountry.getCountry
 	#overall most visited pages
 	$(SCRIPT) --date=$(START_DATE),$(END_DATE) \
 		--idSite=2,4 --columns=label,url,nb_visits,nb_hits \
@@ -137,3 +140,5 @@ generate_others_reports:
 
 all: generate_over_all_reports generate_repository_reports generate_LRT_reports generate_services_reports generate_others_reports
 	date > $(INDEX)/last_updated.txt
+	wget -q -O - https://lindat.mff.cuni.cz/statistics/reload > /dev/null
+	

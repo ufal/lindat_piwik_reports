@@ -304,6 +304,8 @@ class Searcher(object):
         results = dict()
 
         if period == 'year':
+            results["total"] = {"nb_visits": 0, "nb_hits": 0}
+        else:
             results["total"] = {}
 
         for doc in docs:
@@ -326,12 +328,16 @@ class Searcher(object):
                     results[year] = {}
                 if url not in results[year]:
                     results[year][url] = {"nb_visits": 0, "nb_hits": 0}
-                if url not in results["total"]:
-                    results["total"][url] = {"nb_visits": 0, "nb_hits": 0}
                 results[year][url]["nb_visits"] += nb_visits
                 results[year][url]["nb_hits"] += nb_hits
-                results["total"][url]["nb_visits"] += nb_visits
-                results["total"][url]["nb_hits"] += nb_hits
+
+                if year not in results["total"]:
+                    results["total"][year] = {"nb_visits": 0, "nb_hits": 0}
+                results["total"]["nb_visits"] += nb_visits
+                results["total"]["nb_hits"] += nb_hits
+                results["total"][year]["nb_visits"] += nb_visits
+                results["total"][year]["nb_hits"] += nb_hits
+
             elif period == 'month':
                 if year not in results:
                     results[year] = {}
@@ -341,6 +347,14 @@ class Searcher(object):
                     results[year][month][url] = {"nb_visits": 0, "nb_hits": 0}
                 results[year][month][url]["nb_visits"] += nb_visits
                 results[year][month][url]["nb_hits"] += nb_hits
+
+                if year not in results["total"]:
+                    results["total"][year] = {}
+                if month not in results["total"][year]:
+                    results["total"][year][month] = {"nb_visits": 0, "nb_hits": 0}
+                results["total"][year][month]["nb_visits"] += nb_visits
+                results["total"][year][month]["nb_hits"] += nb_hits
+
             elif period == 'day':
                 if year not in results:
                     results[year] = {}
@@ -353,7 +367,17 @@ class Searcher(object):
                 results[year][month][day][url]["nb_visits"] += nb_visits
                 results[year][month][day][url]["nb_hits"] += nb_hits
 
+                if year not in results["total"]:
+                    results["total"][year] = {}
+                if month not in results["total"][year]:
+                    results["total"][year][month] = {}
+                if day not in results["total"][year][month]:
+                    results["total"][year][month][day] = {"nb_visits": 0, "nb_hits": 0}
+                results["total"][year][month][day]["nb_visits"] += nb_visits
+                results["total"][year][month][day]["nb_hits"] += nb_hits
+
         return results
 
     def close(self):
         self.directory.close()
+
