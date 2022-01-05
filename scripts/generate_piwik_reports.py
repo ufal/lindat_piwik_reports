@@ -112,14 +112,16 @@ def main():
 
 def iterate_response(site_id, response):
     keys = response.keys()
+    ind = indexer.Indexer(config.index)
+    function_to_call = getattr(ind, m2m[config.method])
+
     for key in keys:
         dmy = key.split('-')
         row = response[key]
         if row:
-            ind = indexer.Indexer(config.index)
-            function_to_call = getattr(ind, m2m[config.method])
             function_to_call(site_id, dmy, row, config.segment)
-            ind.close()
+
+    ind.close()
 
 
 if __name__ == '__main__':

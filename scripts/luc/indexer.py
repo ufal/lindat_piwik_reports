@@ -1,13 +1,12 @@
 import os
 import re
+import hashlib
 from urllib.parse import quote_plus
 from java.nio.file import Paths
 from org.apache.lucene.analysis.core import WhitespaceAnalyzer
-from org.apache.lucene.document import Document, Field, FieldType, StoredField, IntPoint
-from org.apache.lucene.index import FieldInfo, IndexWriter, IndexWriterConfig, IndexOptions
+from org.apache.lucene.document import Document, Field, FieldType, StoredField, IntPoint, StringField
+from org.apache.lucene.index import FieldInfo, IndexWriter, IndexWriterConfig, IndexOptions, Term
 from org.apache.lucene.store import SimpleFSDirectory
-from org.apache.lucene.queryparser.classic import QueryParser
-from luc import searcher
 
 
 class Indexer(object):
@@ -20,34 +19,34 @@ class Indexer(object):
         self.config = IndexWriterConfig(self.analyzer)
         self.config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND)
         self.writer = IndexWriter(self.store, self.config)
-        self.parser = QueryParser("type", self.analyzer)
-        self.searcher = searcher.Searcher()
 
     def index_views(self, site_id, date, row, segment=None):
         try:
             doc, q = Indexer.initialize_document(site_id, date, "views", segment)
+            doc_id = hashlib.sha1(q.encode('UTF-8')).hexdigest()
+            doc.add(StringField("id", doc_id, Field.Store.NO))
             doc.add(StoredField("nb_pageviews", int(row["nb_pageviews"])))
             doc.add(StoredField("nb_uniq_pageviews", int(row["nb_uniq_pageviews"])))
-            self.writer.deleteDocuments(self.parser.parse(q))
-            self.writer.addDocument(doc)
-            self.writer.commit()
+            self.writer.updateDocument(Term("id", doc_id), doc)
         except:
+            self.writer.rollback()
             print("Failed in index_views")
             raise
 
     def index_visits(self, site_id, date, row, segment=None):
         try:
             doc, q = Indexer.initialize_document(site_id, date, "visits", segment)
+            doc_id = hashlib.sha1(q.encode('UTF-8')).hexdigest()
+            doc.add(StringField("id", doc_id, Field.Store.NO))
             if type(row) is dict:
                 doc.add(StoredField("nb_visits", int(row["nb_visits"])))
                 if "nb_uniq_visitors" in row:
                     doc.add(StoredField("nb_uniq_visitors", int(row["nb_uniq_visitors"])))
             else:
                 doc.add(StoredField("nb_visits", int(row)))
-            self.writer.deleteDocuments(self.parser.parse(q))
-            self.writer.addDocument(doc)
-            self.writer.commit()
+            self.writer.updateDocument(Term("id", doc_id), doc)
         except:
+            self.writer.rollback()
             print("Failed in index_visits")
             raise
 
@@ -60,13 +59,14 @@ class Indexer(object):
                 doc, q = Indexer.initialize_document(site_id, date, "country", segment)
                 doc.add(Field("country", r["code"], ft1))
                 q += " AND +country: " + r["code"]
+                doc_id = hashlib.sha1(q.encode('UTF-8')).hexdigest()
+                doc.add(StringField("id", doc_id, Field.Store.NO))
                 doc.add(StoredField("nb_visits", int(r["nb_visits"])))
                 if "nb_uniq_visitors" in r:
                     doc.add(StoredField("nb_uniq_visitors", int(r["nb_uniq_visitors"])))
-                self.writer.deleteDocuments(self.parser.parse(q))
-                self.writer.addDocument(doc)
-            self.writer.commit()
+                self.writer.updateDocument(Term("id", doc_id), doc)
         except:
+            self.writer.rollback()
             print("Failed in index_country")
             raise
 
@@ -95,14 +95,16 @@ class Indexer(object):
                 doc.add(StoredField("nb_visits", int(r["nb_visits"])))
                 doc.add(StoredField("nb_hits", int(r["nb_hits"])))
 
-                self.writer.deleteDocuments(self.parser.parse(q))
-                self.writer.addDocument(doc)
-            self.writer.commit()
+                doc_id = hashlib.sha1(q.encode('UTF-8')).hexdigest()
+                doc.add(StringField("id", doc_id, Field.Store.NO))
+                self.writer.updateDocument(Term("id", doc_id), doc)
         except:
+            self.writer.rollback()
             print("Failed in index_urls")
             raise
 
     def close(self):
+        self.writer.commit()
         self.writer.close()
 
     @staticmethod
