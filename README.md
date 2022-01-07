@@ -148,3 +148,10 @@ Not providing segment will return the overall counts combining all.
 Use the joomla.html file to create an article with piwik_charts.js javascript.
 
 jqplot is required to generate the charts.
+
+Add the dependencies mentioned in https://github.com/ufal/piwik-charts#how-to-use (js, css) and also:
+```html
+<link href="js/lib/jquery-jvectormap-2.0.3.css" rel="stylesheet" type="text/css" />
+<script src="js/lib/jquery-jvectormap-2.0.3.min.js" type="text/javascript"></script>
+<script src="js/lib/jquery-jvectormap-world-mill.js" type="text/javascript"></script>
+```

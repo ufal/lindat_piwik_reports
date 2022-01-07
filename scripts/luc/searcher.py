@@ -1,3 +1,4 @@
+import time
 from datetime import date
 from java.nio.file import Paths
 from java.lang import Integer
@@ -87,8 +88,8 @@ class Searcher(object):
             results["total"] = {"nb_pageviews": 0, "nb_uniq_pageviews": 0}
 
         for doc in docs:
-            nb_pageviews = int(doc["nb_pageviews"])
-            nb_uniq_pageviews = int(doc["nb_uniq_pageviews"])
+            nb_pageviews = int(doc["nb_pageviews"]) if doc["nb_pageviews"] else int(doc["nb_hits"])
+            nb_uniq_pageviews = int(doc["nb_uniq_pageviews"]) if doc["nb_uniq_pageviews"] else int(doc["nb_visits"])
             year = doc["year"]
             month = doc["month"]
             day = doc["day"]
@@ -226,6 +227,7 @@ class Searcher(object):
 
         q = create_query(dmy, "urls", period=period, site_id=site_id, segment=segment)
         print(q)
+        start_time = time.process_time()
         docs = self.search(q)
 
         results = dict()
@@ -293,6 +295,8 @@ class Searcher(object):
                 results[year][month][day][url]["nb_visits"] += nb_visits
                 results[year][month][day][url]["nb_hits"] += nb_hits
 
+        elapsed_time = time.process_time() - start_time
+        print("Elapsed time {}".format(elapsed_time))
         return results
 
     def search_handle(self, dmy=None, period='year', site_id=None, handle=None, segment=None):

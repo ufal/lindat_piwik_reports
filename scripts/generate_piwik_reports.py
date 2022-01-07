@@ -1,4 +1,4 @@
-#!/usr/bin/python3.5
+#!/usr/bin/env python3
 
 import argparse
 from piwik.analytics import Analytics
@@ -63,6 +63,14 @@ def parse_args():
                         help='return flat view of hierarchical records',
                         default=None
                         )
+    parser.add_argument('--filter_pattern',
+                        help='defines the text you want to search for in the filter_column. Only the row with the given column matching the pattern will be returned.',
+                        default=None
+                        )
+    parser.add_argument('--filter_column',
+                        help='defines the column that we want to search for a text (see filter_pattern). If not specified, defaults to \'url\'',
+                        default='url'
+                        )
     return parser.parse_args()
 
 
@@ -84,6 +92,10 @@ def main():
         pa.set_param('segment', config.segment)
     if config.columns:
         pa.set_param('showColumns', config.columns)
+    if config.filter_pattern:
+        pa.set_param('filter_pattern', config.filter_pattern)
+        if config.filter_column:
+            pa.set_param('filter_column', config.filter_column)
 
     pa.set_param('period', 'year')
     response = pa.get()
@@ -124,5 +136,12 @@ def iterate_response(site_id, response):
     ind.close()
 
 
+def segmentSanityCheck():
+    if config.segment and 'pageUrl' in config.segment and 'Actions' in config.method:
+        import sys
+        sys.exit("pageUrl segments on Actions endpoint don't return what they used to. See https://forum.matomo.org/t/filter-page-urls-by-segments/34859/2")
+
+
 if __name__ == '__main__':
+    segmentSanityCheck()
     main()

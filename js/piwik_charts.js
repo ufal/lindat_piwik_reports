@@ -6,7 +6,8 @@ var current_date = null;
 var current_tab   = "#overall";
 var loaded_data = {};
 var already_loaded_dates = {};
-var base_url = "https://lindat.mff.cuni.cz/statistics/";
+//var base_url = "https://lindat.mff.cuni.cz/statistics/";
+var base_url = "http://localhost:5000/";
 
 var today     = new Date();
 var today_str = today.getFullYear() + "-" + (today.getMonth()+1) + "-" + today.getDate();
@@ -30,7 +31,7 @@ jQuery(document).ready(function (){
 
 	$.when(
 	    loadData("views",   null, "year", "overall"),
-		$.get("https://lindat.mff.cuni.cz/statistics/", function( data ) {
+		$.get(base_url, function( data ) {
 			$("#last_updated").html("<h6>Last Updated: " + data + "</h6>");
 		})
 	).then(function() {
@@ -649,7 +650,8 @@ plotMap = function(div, data, color) {
 	  }
 	});
 
-	$('#' + div + "_cz").html("<img src='/media/mod_languages/images/cz.gif' /> Visits from Czech Republic <strong>" + cz + " (" + cz_per +"%)</strong>");
+	$('#' + div + "_cz").html("<img src='media/mod_languages/images/cz.gif' /> Visits from Czech Republic" +
+        " <strong>" + cz + " (" + cz_per +"%)</strong>");
 	$('#' + div + "_cz").show();
 }
 

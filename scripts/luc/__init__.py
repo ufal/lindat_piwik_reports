@@ -1,4 +1,4 @@
 import lucene
 
-lucene.initVM()
+env = lucene.initVM()
 print('lucene', lucene.VERSION)

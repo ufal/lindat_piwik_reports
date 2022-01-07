@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 app.config['JSON_AS_ASCII'] = False
-index = "path_to_index_folder"
+index = "../indexes/"
 
 s = searcher.Searcher(index)
 
