@@ -2,3 +2,4 @@ indexes
 __pycache__
 __pycache__/*
 *.pyc
+/new_importer/config.py
