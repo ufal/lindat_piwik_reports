@@ -1,26 +1,48 @@
+# The ROLLUP creates (sub)totals based on the grouping columns; these will have NULL in that column; eg. if year,
+# month, day and idsite are NULL this is the grand total across all ymd and sites
 hits_visits_aggregated = """
 SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, idsite, YEAR(server_time) as year, 
 MONTH(server_time) as month, DAY(server_time) as day
-    FROM piwik_log_link_visit_action
-        LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
+    FROM piwik_log_link_visit_action v
+        LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
             WHERE type = 1 AND server_time >= '2014-01-01' {}
                         GROUP BY year, month, day, idsite WITH ROLLUP;
 """
 
+
+# should use idvisitor from piwik_log_visits
+# Need to join actions to be able to select based on url; the join with log_visits seems redundant; but for some
+# reason there are many (at the time of writing almost twice as many) idvisitor in log_link_visit_action that are not
+# in log_visit
+visits_visitors = """
+SELECT count(DISTINCT v.idvisit) as visits, count( DISTINCT v.idvisitor) as visitors,
+ v.idsite, YEAR(server_time) as year, MONTH(server_time) as month, DAY(server_time) as day
+    FROM piwik_log_visit v
+    LEFT JOIN piwik_log_link_visit_action ON v.idvisit = piwik_log_link_visit_action.idvisit
+    LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
+            WHERE server_time >= '2014-01-01' {}
+                        GROUP BY year, month, day, v.idsite WITH ROLLUP;
+"""
+
+# Note: for this to work you must alias the correct table with idsite as "v"
 segment2where = {
-    'overall': 'AND idsite IN (2,4) ',
-    'downloads': 'AND idsite = 4',
+    'overall': 'AND v.idsite IN (2,4) ',
+    'downloads': 'AND v.idsite = 4',
     'repository': """
-        AND idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%'
+        AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%'
     """,
     'others': """
-        AND idsite = 2 AND name not like 'lindat.mff.cuni.cz%'
+        AND v.idsite = 2 AND name not like 'lindat.mff.cuni.cz%'
     """,
     'services': """
-        AND idsite = 2 AND name like 'lindat.mff.cuni.cz/services%'
+        AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/services%'
     """,
     'lrt': """
-        AND idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%LRT%'
+        AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%LRT%'
     """
 }
 
+statements = {
+    'views': hits_visits_aggregated,
+    'visits': visits_visitors
+}
