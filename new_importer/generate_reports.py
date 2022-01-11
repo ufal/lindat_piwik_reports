@@ -38,7 +38,7 @@ def get_visits(cursor):
 
 
 def get_country(cursor):
-    pass
+    _fetch_and_write(cursor, 'country')
 
 
 def get_urls(cursor):
@@ -57,15 +57,32 @@ def _format_query_for_segment(query, segment):
     return query.format(segment_where_selector)
 
 
-_stats_kind2mapper = {
-    'views': lambda row: {
+def _views_mapper(row, result_dict, result_key):
+    result_dict[result_key] = {
         'nb_pageviews': row['hits'],
         'nb_uniq_pageviews': row['visits']
-    },
-    'visits': lambda row: {
+    }
+
+
+def _visits_mapper(row, result_dict, result_key):
+    result_dict[result_key] = {
         'nb_uniq_visitors': row['visitors'],
         'nb_visits': row['visits']
     }
+
+
+def _country_mapper(row, result_dict, result_key):
+    d = result_dict.setdefault(result_key, {})
+    d[row['location_country']] = {
+        'nb_uniq_visitors': row['visitors'],
+        'nb_visits': row['visits']
+    }
+
+
+_stats_kind2mapper = {
+    'views': _views_mapper,
+    'visits': _visits_mapper,
+    'country': _country_mapper
 }
 
 
@@ -76,19 +93,19 @@ def _process_results(cursor, mapper):
     for row in cursor:
         # grand total
         if not row['idsite'] and not row['year'] and not row['month'] and not row['day']:
-            yearly_report['total'] = mapper(row)
+            mapper(row, yearly_report, 'total')
         # per year total
         elif not row['idsite'] and not row['month'] and not row['day']:
-            yearly_report[row['year']] = mapper(row)
+            mapper(row, yearly_report, row['year'])
         # per month total
         elif not row['idsite'] and not row['day']:
             year = per_month_report.setdefault(row['year'], {})
-            year[row['month']] = mapper(row)
+            mapper(row, year, row['month'])
         # per day total
         elif not row['idsite']:
             year = per_day_report.setdefault(row['year'], {})
             month = year.setdefault(row['month'], {})
-            month[row['day']] = mapper(row)
+            mapper(row, month, row['day'])
     return yearly_report, per_month_report, per_day_report
 
 
@@ -117,6 +134,7 @@ def main():
         start_time = time.perf_counter()
         get_views(cursor)
         get_visits(cursor)
+        get_country(cursor)
         elapsed_time = time.perf_counter() - start_time
         print("Elapsed time fetching all: {}".format(elapsed_time))
     finally:
