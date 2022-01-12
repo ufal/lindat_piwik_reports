@@ -567,10 +567,10 @@ plotViews = function (div, data, color, tf, ti, highlightString) {
 	for(index in ticks) {
 		var tick = ticks[index];
 		if(current_view == "month") {
-			tick = current_year + "-" + tick;
+			tick = current_year + "-" + tick.padStart(2, "0");
 		} else
 		if(current_view == "day") {
-			tick = current_year + "-" + current_month + "-" + tick;
+			tick = current_year + "-" + current_month.padStart(2, "0") + "-" + tick;
 		}
 		x.push(tick);
 		var v = data[ticks[index]]["nb_pageviews"];
