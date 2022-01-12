@@ -1,0 +1,3 @@
+[submodule "nginx/var/www/static/piwik-charts"]
+	path = nginx/var/www/static/piwik-charts
+	url = git@github.com:ufal/piwik-charts.git
