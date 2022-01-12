@@ -116,6 +116,9 @@ segment2where = {
     """,
     'lrt': """
         AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%LRT%'
+    """,
+    'lrt-downloads': """
+        AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%LRT%'
     """
 }
 

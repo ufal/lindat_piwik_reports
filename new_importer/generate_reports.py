@@ -7,7 +7,7 @@ import mysql.connector
 from config import *
 from statements import statements, segment2where
 
-segments = ['overall', 'downloads', 'repository', 'others', 'services', 'lrt']
+segments = ['overall', 'downloads', 'repository', 'others', 'services', 'lrt', 'lrt-downloads']
 
 
 def _fetch_and_write(cursor, stats_kind):
