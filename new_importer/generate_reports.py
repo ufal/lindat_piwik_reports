@@ -172,6 +172,10 @@ def main():
         get_urls(cursor)
         elapsed_time = time.perf_counter() - start_time
         print("Elapsed time fetching all: {}".format(elapsed_time))
+        from datetime import datetime
+        today = datetime.now()
+        with open(os.path.join(output_dir, 'last_updated.txt'), 'w') as f:
+            print(today, file=f)
     finally:
         cursor.close()
         db.close()
