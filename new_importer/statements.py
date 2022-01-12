@@ -43,6 +43,64 @@ SELECT location_country, count(distinct v.idvisit) as visits, count( DISTINCT v.
                         ;
 """
 
+# No window functions/partition by in mysql 5.5;
+# so the inner most select grabs the data and orders them
+# the next one numbers the rows for given year-month combination
+# the outer most selects the top N rows for the year-month combination
+top_urls_by_month = """
+set @row_number = 0;
+set @last_date = '';
+SELECT hits, visits, year, month, name, row_number FROM (
+SELECT hits, visits, year, month, name,
+    @row_number:=CASE
+        WHEN @last_date = concat(year, '-', month) then @row_number + 1
+        ELSE 0
+    END as row_number,
+    @last_date:=concat(year, '-', month) FROM (
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, idsite, YEAR(server_time) as year, MONTH(server_time) as month, name
+    FROM piwik_log_link_visit_action v
+    LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
+    WHERE type = 1
+    AND server_time >= '2014-01-01'
+    {}
+    GROUP BY year, month, name
+    order by year, month, hits desc
+ ) data ) data_numbered where row_number < 100;
+"""
+
+top_urls_by_year = """
+set @row_number = 0;
+set @last_date = '';
+SELECT hits, visits, year, name, row_number FROM (
+SELECT hits, visits, year, name,
+    @row_number:=CASE
+        WHEN @last_date = year then @row_number + 1
+        ELSE 0
+    END as row_number,
+    @last_date:=year FROM (
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(server_time) as year, name
+    FROM piwik_log_link_visit_action v
+    LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
+    WHERE type = 1
+    AND server_time >= '2014-01-01'
+    {}
+    GROUP BY year, name
+    order by year, hits desc
+ ) data ) data_numbered where row_number < 100;
+"""
+
+top_urls_total = """
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, name
+    FROM piwik_log_link_visit_action v
+    LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
+    WHERE type = 1
+    AND server_time >= '2014-01-01'
+    {}
+    GROUP BY name
+    order by hits desc
+    limit 100
+"""
+
 # Note: for this to work you must alias the correct table with idsite as "v"
 segment2where = {
     'overall': 'AND v.idsite IN (2,4) ',
@@ -64,5 +122,8 @@ segment2where = {
 statements = {
     'views': hits_visits_aggregated,
     'visits': visits_visitors,
-    'country': visits_countries
+    'country': visits_countries,
+    'urls_total': top_urls_total,
+    'urls_year': top_urls_by_year,
+    'urls_month': top_urls_by_month
 }

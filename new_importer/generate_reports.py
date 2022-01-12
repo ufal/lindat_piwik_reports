@@ -42,7 +42,33 @@ def get_country(cursor):
 
 
 def get_urls(cursor):
-    pass
+    start_time = time.perf_counter()
+    for segment in segments:
+        yearly_report = {}
+        per_month_report = {}
+        segment_start_time = time.perf_counter()
+        query = _format_query_for_segment(statements['urls_total'], segment)
+        cursor.execute(query)
+        for row in cursor:
+            _url_mapper(row, yearly_report, 'total')
+        query = _format_query_for_segment(statements['urls_year'], segment)
+        for result in cursor.execute(query, multi=True):
+            if result.with_rows:
+                for row in result:
+                    _url_mapper(row, yearly_report, row['year'])
+        query = _format_query_for_segment(statements['urls_month'], segment)
+        for result in cursor.execute(query, multi=True):
+            if result.with_rows:
+                for row in result:
+                    year = per_month_report.setdefault(row['year'], {})
+                    _url_mapper(row, year, row['month'])
+
+        prefix = os.path.join('urls', _segment2prefix(segment))
+        _write_results(prefix, yearly_report, per_month_report, {})
+        elapsed_time = time.perf_counter() - segment_start_time
+        print("Elapsed time in {} segment '{}': {}".format('urls', segment, elapsed_time))
+    elapsed_time = time.perf_counter() - start_time
+    print("Elapsed time in {}: {}".format('urls', elapsed_time))
 
 
 def _segment2prefix(segment):
@@ -75,6 +101,14 @@ def _country_mapper(row, result_dict, result_key):
     d = result_dict.setdefault(result_key, {})
     d[row['location_country']] = {
         'nb_uniq_visitors': row['visitors'],
+        'nb_visits': row['visits']
+    }
+
+
+def _url_mapper(row, result_dict, result_key):
+    d = result_dict.setdefault(result_key, {})
+    d[row['name']] = {
+        'nb_hits': row['hits'],
         'nb_visits': row['visits']
     }
 
@@ -120,7 +154,7 @@ def _write_results(prefix, yearly_report, per_month_report, per_day_report):
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(filename, 'w') as f:
             json.dump({'response': {year: per_month_report[year]}}, f)
-        for month in per_day_report[year].keys():
+        for month in per_day_report.get(year, {}).keys():
             filename = os.path.join(output_prefix, str(year), str(month), 'response.json')
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             with open(filename, 'w') as f:
@@ -135,6 +169,7 @@ def main():
         get_views(cursor)
         get_visits(cursor)
         get_country(cursor)
+        get_urls(cursor)
         elapsed_time = time.perf_counter() - start_time
         print("Elapsed time fetching all: {}".format(elapsed_time))
     finally:
