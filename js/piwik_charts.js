@@ -7,7 +7,7 @@ var current_tab   = "#overall";
 var loaded_data = {};
 var already_loaded_dates = {};
 //var base_url = "https://lindat.mff.cuni.cz/statistics/";
-var base_url = "http://localhost:5000/";
+var base_url = "http://localhost:8080/";
 
 var today     = new Date();
 var today_str = today.getFullYear() + "-" + (today.getMonth()+1) + "-" + today.getDate();
@@ -142,6 +142,8 @@ overallTab = function() {
     ).then(function() {
 
         var overall_views = loaded_data["overall"]["views"];
+        var total_views = overall_views["total"]["nb_pageviews"];
+        var total_uniq_views= overall_views["total"]["nb_uniq_pageviews"];
         var overall_visits = loaded_data["overall"]["visits"];
         var overall_country = loaded_data["overall"]["country"]["total"];
         var overall_urls = loaded_data["overall"]["urls"]["total"];
@@ -153,6 +155,8 @@ overallTab = function() {
         if($("#overall").length) {
             if(current_view == "month") {
                 overall_views = loaded_data["overall"]["views"][current_year];
+                total_views = overall_views["nb_pageviews"];
+                total_uniq_views= overall_views["nb_uniq_pageviews"];
                 overall_visits = loaded_data["overall"]["visits"][current_year];
                 overall_country = loaded_data["overall"]["country"][current_year];
                 overall_urls = loaded_data["overall"]["urls"][current_year];
@@ -163,6 +167,8 @@ overallTab = function() {
             }else
             if(current_view == "day") {
                 overall_views = loaded_data["overall"]["views"][current_year][current_month];
+                total_views = overall_views["nb_pageviews"];
+                total_uniq_views= overall_views["nb_uniq_pageviews"];
                 overall_visits = loaded_data["overall"]["visits"][current_year][current_month];
                 overall_country = loaded_data["overall"]["country"][current_year][current_month];
                 overall_urls = loaded_data["overall"]["urls"][current_year][current_month];
@@ -175,7 +181,7 @@ overallTab = function() {
             showMetrics("overall_visits_count", overall_views, overall_visits, overall_downloads, overall_downloads_visits, false);
             plotDistribution("overall_distribution_chart");
             plotMap("overall_visits_map", overall_country, "#004563");
-            showTopURLs("overall_accessed_url", overall_urls);
+            showTopURLs("overall_accessed_url", overall_urls, total_views, total_uniq_views);
 
             $("#loading").css("display", "none");
 
@@ -193,6 +199,8 @@ repositoryTab = function() {
     ).then(function() {
 
         var overall_views = loaded_data["repository"]["views"];
+        var total_views = overall_views["total"]["nb_pageviews"];
+        var total_uniq_views= overall_views["total"]["nb_uniq_pageviews"];
         var overall_visits = loaded_data["repository"]["visits"];
         var overall_country = loaded_data["repository"]["country"]["total"];
         var overall_urls = loaded_data["repository"]["urls"]["total"];
@@ -204,6 +212,8 @@ repositoryTab = function() {
 
             if(current_view == "month") {
                 overall_views = loaded_data["repository"]["views"][current_year];
+                total_views = overall_views["nb_pageviews"];
+                total_uniq_views= overall_views["nb_uniq_pageviews"];
                 overall_visits = loaded_data["repository"]["visits"][current_year];
                 overall_country = loaded_data["repository"]["country"][current_year];
                 overall_urls = loaded_data["repository"]["urls"][current_year];
@@ -212,6 +222,8 @@ repositoryTab = function() {
             }else
             if(current_view == "day") {
                 overall_views = loaded_data["repository"]["views"][current_year][current_month];
+                total_views = overall_views["nb_pageviews"];
+                total_uniq_views= overall_views["nb_uniq_pageviews"];
                 overall_visits = loaded_data["repository"]["visits"][current_year][current_month];
                 overall_country = loaded_data["repository"]["country"][current_year][current_month];
                 overall_urls = loaded_data["repository"]["urls"][current_year][current_month];
@@ -222,7 +234,7 @@ repositoryTab = function() {
             plotViews("repository_views_chart", overall_views, "#00749f", tf, ti, "<div style='font-size: 110%; padding: 5px; color: #FFFFFF;'>%s<BR/><strong style='font-size: 14px;'>%s</strong> Views</div>");
             showMetrics("repository_visits_count", overall_views, overall_visits, null, null);
             plotMap("repository_visits_map", overall_country, "#004563");
-            showTopURLs("repository_accessed_url", overall_urls);
+            showTopURLs("repository_accessed_url", overall_urls, total_views, total_uniq_views);
 
             $("#loading").css("display", "none");
         }
@@ -243,11 +255,15 @@ lrtTab = function() {
     ).then(function() {
 
         var overall_views = loaded_data["lrt"]["views"];
+        var total_views = overall_views["total"]["nb_pageviews"];
+        var total_uniq_views= overall_views["total"]["nb_uniq_pageviews"];
         var overall_visits = loaded_data["lrt"]["visits"];
         var overall_country = loaded_data["lrt"]["country"]["total"];
         var overall_urls = loaded_data["lrt"]["urls"]["total"];
 
         var download_views = loaded_data["lrt-downloads"]["views"];
+        var total_downloads = download_views["total"]["nb_pageviews"];
+        var total_uniq_downloads= download_views["total"]["nb_uniq_pageviews"];
         var download_visits = loaded_data["lrt-downloads"]["visits"];
         var download_country = loaded_data["lrt-downloads"]["country"]["total"];
         var download_urls = loaded_data["lrt-downloads"]["urls"]["total"];
@@ -260,11 +276,15 @@ lrtTab = function() {
 
             if(current_view == "month") {
                 overall_views = loaded_data["lrt"]["views"][current_year];
+                total_views = overall_views["nb_pageviews"];
+                total_uniq_views= overall_views["nb_uniq_pageviews"];
                 overall_visits = loaded_data["lrt"]["visits"][current_year];
                 overall_country = loaded_data["lrt"]["country"][current_year];
                 overall_urls = loaded_data["lrt"]["urls"][current_year];
 
                 download_views = loaded_data["lrt-downloads"]["views"][current_year];
+                total_downloads = download_views["nb_pageviews"];
+                total_uniq_downloads= download_views["nb_uniq_pageviews"];
                 download_visits = loaded_data["lrt-downloads"]["visits"][current_year];
                 download_country = loaded_data["lrt-downloads"]["country"][current_year];
                 download_urls = loaded_data["lrt-downloads"]["urls"][current_year];
@@ -274,11 +294,15 @@ lrtTab = function() {
             }else
             if(current_view == "day") {
                 overall_views = loaded_data["lrt"]["views"][current_year][current_month];
+                total_views = overall_views["nb_pageviews"];
+                total_uniq_views= overall_views["nb_uniq_pageviews"];
                 overall_visits = loaded_data["lrt"]["visits"][current_year][current_month];
                 overall_country = loaded_data["lrt"]["country"][current_year][current_month];
                 overall_urls = loaded_data["lrt"]["urls"][current_year][current_month];
 
                 download_views = loaded_data["lrt-downloads"]["views"][current_year][current_month];
+                total_downloads = download_views["nb_pageviews"];
+                total_uniq_downloads= download_views["nb_uniq_pageviews"];
                 download_visits = loaded_data["lrt-downloads"]["visits"][current_year][current_month];
                 download_country = loaded_data["lrt-downloads"]["country"][current_year][current_month];
                 download_urls = loaded_data["lrt-downloads"]["urls"][current_year][current_month];
@@ -291,8 +315,8 @@ lrtTab = function() {
             plotViews("lrt_downloads_chart", download_views, "#004563", tf, ti, "<div style='font-size: 110%; padding: 5px; color: #FFFFFF;'>%s<BR/><strong style='font-size: 14px;'>%s</strong> Downloads</div>");
             showMetrics("lrt_visits_count", overall_views, overall_visits, download_views, download_visits);
             plotMap("lrt_visits_map", overall_country, "#004563");
-            showTopURLs("lrt_accessed_url", overall_urls);
-            showTopURLs("lrt_download_url", download_urls, true);
+            showTopURLs("lrt_accessed_url", overall_urls, total_views, total_uniq_views);
+            showTopURLs("lrt_download_url", download_urls, total_downloads, total_uniq_downloads);
 
             $("#loading").css("display", "none");
         }
@@ -310,6 +334,8 @@ downloadsTab = function() {
     ).then(function() {
 
         var overall_views = loaded_data["downloads"]["views"];
+        var total_views = overall_views["total"]["nb_pageviews"];
+        var total_uniq_views= overall_views["total"]["nb_uniq_pageviews"];
         var overall_visits = loaded_data["downloads"]["visits"];
         var overall_country = loaded_data["downloads"]["country"]["total"];
         var overall_urls = loaded_data["downloads"]["urls"]["total"];
@@ -321,6 +347,8 @@ downloadsTab = function() {
 
             if(current_view == "month") {
                 overall_views = loaded_data["downloads"]["views"][current_year];
+                total_views = overall_views["nb_pageviews"];
+                total_uniq_views= overall_views["nb_uniq_pageviews"];
                 overall_visits = loaded_data["downloads"]["visits"][current_year];
                 overall_country = loaded_data["downloads"]["country"][current_year];
                 overall_urls = loaded_data["downloads"]["urls"][current_year];
@@ -329,6 +357,8 @@ downloadsTab = function() {
             }else
             if(current_view == "day") {
                 overall_views = loaded_data["downloads"]["views"][current_year][current_month];
+                total_views = overall_views["nb_pageviews"];
+                total_uniq_views= overall_views["nb_uniq_pageviews"];
                 overall_visits = loaded_data["downloads"]["visits"][current_year][current_month];
                 overall_country = loaded_data["downloads"]["country"][current_year][current_month];
                 overall_urls = loaded_data["downloads"]["urls"][current_year][current_month];
@@ -339,7 +369,7 @@ downloadsTab = function() {
             plotViews("downloads_chart", overall_views, "#73C774", tf, ti, "<div style='font-size: 110%; padding: 5px; color: #FFFFFF;'>%s<BR/><strong style='font-size: 14px;'>%s</strong> Downloads</div>");
             showMetrics("downloads_count", null, null, overall_views, overall_visits);
             plotMap("downloads_map", overall_country, "#004563");
-            showTopURLs("downloads_url", overall_urls, true);
+            showTopURLs("downloads_url", overall_urls, total_views, total_uniq_views);
 
             $("#loading").css("display", "none");
         }
@@ -357,6 +387,8 @@ servicesTab = function() {
     ).then(function() {
 
         var overall_views = loaded_data["services"]["views"];
+        var total_views = overall_views["total"]["nb_pageviews"];
+        var total_uniq_views= overall_views["total"]["nb_uniq_pageviews"];
         var overall_visits = loaded_data["services"]["visits"];
         var overall_country = loaded_data["services"]["country"]["total"];
         var overall_urls = loaded_data["services"]["urls"]["total"];
@@ -368,6 +400,8 @@ servicesTab = function() {
 
             if(current_view == "month") {
                 overall_views = loaded_data["services"]["views"][current_year];
+                total_views = overall_views["nb_pageviews"];
+                total_uniq_views= overall_views["nb_uniq_pageviews"];
                 overall_visits = loaded_data["services"]["visits"][current_year];
                 overall_country = loaded_data["services"]["country"][current_year];
                 overall_urls = loaded_data["services"]["urls"][current_year];
@@ -376,6 +410,8 @@ servicesTab = function() {
             }else
             if(current_view == "day") {
                 overall_views = loaded_data["services"]["views"][current_year][current_month];
+                total_views = overall_views["nb_pageviews"];
+                total_uniq_views= overall_views["nb_uniq_pageviews"];
                 overall_visits = loaded_data["services"]["visits"][current_year][current_month];
                 overall_country = loaded_data["services"]["country"][current_year][current_month];
                 overall_urls = loaded_data["services"]["urls"][current_year][current_month];
@@ -385,7 +421,7 @@ servicesTab = function() {
             plotViews("services_views_chart", overall_views, "#C7754C", tf, ti, "<div style='font-size: 110%; padding: 5px; color: #FFFFFF;'>%s<BR/><strong style='font-size: 14px;'>%s</strong> Views</div>");
             showMetrics("services_visits_count", overall_views, overall_visits, null, null);
             plotMap("services_visits_map", overall_country, "#004563");
-            showTopURLs("services_visits_urls", overall_urls);
+            showTopURLs("services_visits_urls", overall_urls, total_views, total_uniq_views);
 
             $("#loading").css("display", "none");
 
@@ -405,6 +441,8 @@ othersTab = function() {
     ).then(function() {
 
         var overall_views = loaded_data["others"]["views"];
+        var total_views = overall_views["total"]["nb_pageviews"];
+        var total_uniq_views= overall_views["total"]["nb_uniq_pageviews"];
         var overall_visits = loaded_data["others"]["visits"];
         var overall_country = loaded_data["others"]["country"]["total"];
         var overall_urls = loaded_data["others"]["urls"]["total"];
@@ -416,6 +454,8 @@ othersTab = function() {
 
             if(current_view == "month") {
                 overall_views = loaded_data["others"]["views"][current_year];
+                total_views = overall_views["nb_pageviews"];
+                total_uniq_views= overall_views["nb_uniq_pageviews"];
                 overall_visits = loaded_data["others"]["visits"][current_year];
                 overall_country = loaded_data["others"]["country"][current_year];
                 overall_urls = loaded_data["others"]["urls"][current_year];
@@ -424,6 +464,8 @@ othersTab = function() {
             }else
             if(current_view == "day") {
                 overall_views = loaded_data["others"]["views"][current_year][current_month];
+                total_views = overall_views["nb_pageviews"];
+                total_uniq_views= overall_views["nb_uniq_pageviews"];
                 overall_visits = loaded_data["others"]["visits"][current_year][current_month];
                 overall_country = loaded_data["others"]["country"][current_year][current_month];
                 overall_urls = loaded_data["others"]["urls"][current_year][current_month];
@@ -434,7 +476,7 @@ othersTab = function() {
             plotViews('others_views_chart', overall_views, "#17BDB8", tf, ti, "<div style='font-size: 110%; padding: 5px; color: #FFFFFF;'>%s<BR/><strong style='font-size: 14px;'>%s</strong> Views</div>");
             showMetrics("others_visits_count", overall_views, overall_visits, null, null);
             plotMap("others_visits_map", overall_country, "#004563");
-            showTopURLs("others_visits_urls", overall_urls);
+            showTopURLs("others_visits_urls", overall_urls, total_views, total_uniq_views);
 
             $("#loading").css("display", "none");
         }
@@ -656,12 +698,13 @@ plotMap = function(div, data, color) {
 }
 
 
-showTopURLs = function(div, data, bitstream) {
+showTopURLs = function(div, data, total_views, total_uniq_views) {
 	$("#" + div + ">table thead").html("");
 	$("#" + div + ">table tbody").html("");
 	var i = 1;
-	var v = 0;
-	var uv = 0;
+    // v, uv are totals displayed above the urls
+    var v = total_views;
+    var uv = total_uniq_views;
 	var v100 = 0;
 	var uv100 = 0;
 	sortedUrls = Object.keys(data)
@@ -671,21 +714,8 @@ showTopURLs = function(div, data, bitstream) {
 		var url = sortedUrls[urlInd];
 		if(isNaN(data[url]["nb_hits"])) continue;
 		if(i<=100) {
-			var link = url;
-			if("url" in data[url]) {
-				link = data[url]["url"];
-			}
-			if(link.startsWith("http")) {
-				if(bitstream) {
-					link = link.replace("/bitstream", "");
-					link = link.substring(0, link.lastIndexOf('/'));
-					link = "<a target='_blank' href='" + link + "'>" + url + "</a>";
-				} else {
-					link = "<a target='_blank' href='" + link + "'>" + url + "</a>";
-				}
-			}
 			$("#" + div + ">table tbody").append("<tr>" +
-					"<td class='col-md-8'><span class='pull-left'>" + i + ".</span>&nbsp;<span>" + link + "</span></td>" +
+					"<td class='col-md-8'><span class='pull-left'>" + i + ".</span>&nbsp;<span>" + url + "</span></td>" +
 					"<td class='col-md-2 big-font text-right'><span class='top-urls-visits'>" + data[url]["nb_hits"] + "</span></td>" +
 					"<td class='col-md-2 big-font text-right'><span class='top-urls-visitors'>" + data[url]["nb_visits"] + "</span></td>" +
 							"</tr>");
@@ -694,8 +724,6 @@ showTopURLs = function(div, data, bitstream) {
 		}
 		i++;
 		//if(i==101) break;
-        v  += data[url]["nb_hits"];
-        uv += data[url]["nb_visits"];
 	}
 	$("#" + div + ">table tbody").prepend("<tr>" +
 			"<td class='col-md-8'><strong>Total top 100</strong></td>" +
