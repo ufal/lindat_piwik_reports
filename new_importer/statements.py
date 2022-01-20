@@ -101,6 +101,20 @@ SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, name
     limit 100
 """
 
+# not using rollup; can't get all the needed combinations without GROUPING SETS
+# visits may be higher due to javascript (see the # cleanup); handle is derived from the url there might be unsafe chars
+handles = """
+select substring_index(substring_index(hdl, '?', 1), '#', 1) as handle, name, count(*) as hits,
+ count( DISTINCT idvisit, idaction) as visits, idsite, YEAR(server_time) as year, 
+ MONTH(server_time) as month, DAY(server_time) as day FROM (
+SELECT if(substring(name, locate('handle', name) + 7) like '%/%/%', substring_index(substring(name, locate('handle', name) + 7), '/', 2), substring(name, locate('handle', name) + 7)) as hdl, name, idvisit, idaction, idsite, server_time
+    FROM piwik_log_link_visit_action v
+        LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
+            WHERE type = 1 AND server_time >= '2014-01-01' {} 
+    ) visits_actions
+                        GROUP BY handle, name, year, month, day
+"""
+
 # Note: for this to work you must alias the correct table with idsite as "v"
 segment2where = {
     'overall': 'AND v.idsite IN (2,4) ',
@@ -119,6 +133,12 @@ segment2where = {
     """,
     'lrt-downloads': """
         AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%LRT%'
+    """,
+    'handle-views': """
+        AND v.idsite=2 AND name like 'lindat.mff.cuni.cz/repository/%handle/%/%'
+    """,
+    'handle-downloads': """
+        AND v.idsite=4
     """
 }
 
@@ -128,5 +148,6 @@ statements = {
     'country': visits_countries,
     'urls_total': top_urls_total,
     'urls_year': top_urls_by_year,
-    'urls_month': top_urls_by_month
+    'urls_month': top_urls_by_month,
+    'handles': handles
 }

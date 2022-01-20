@@ -1,8 +1,11 @@
+from datetime import datetime
 import json
 import os
+import sys
 import time
 
 import mysql.connector
+from pathvalidate import ValidationError, validate_filename
 
 from config import *
 from statements import statements, segment2where
@@ -71,6 +74,77 @@ def get_urls(cursor):
     print("Elapsed time in {}: {}".format('urls', elapsed_time))
 
 
+def get_handles(cursor):
+    start_time = time.perf_counter()
+    handles = {}
+    for what in ['views', 'downloads']:  #
+        segment_start_time = time.perf_counter()
+        query = _format_query_for_segment(statements['handles'], 'handle-' + what)
+        cursor.execute(query)
+        for row in cursor:
+            if not row['handle']:
+                continue
+            try:
+                hdl_prefix, hdl_suffix = row['handle'].split('/', 1)
+                validate_filename(hdl_prefix)
+                validate_filename(hdl_suffix)
+            except Exception as e:
+                print(f"Skipping row '{row}'\n", file=sys.stderr)
+                continue
+
+            handle = handles.setdefault(row['handle'], {'views': {}, 'downloads': {}})
+            handle = handle.setdefault(what, {})
+            _handle_mapper(row, handle)
+        elapsed_time = time.perf_counter() - segment_start_time
+        print("Elapsed time in {} '{}': {}".format('handles', what, elapsed_time))
+
+    for hdl in handles.keys():
+        hdl_prefix, hdl_suffix = hdl.split('/', 1)
+        try:
+            validate_filename(hdl_prefix)
+            validate_filename(hdl_suffix)
+        except ValidationError as e:
+            print(f"{e}\n", file=sys.stderr)
+            print(f"Skipping '{hdl}'\n", file=sys.stderr)
+            continue
+
+        prefix = os.path.join('handles', hdl_prefix, hdl_suffix)
+        yearly_report = {
+            'views': handles[hdl]['views'].setdefault('year', {}),
+            'downloads': handles[hdl]['downloads'].setdefault('year', {})
+        }
+        output_prefix = os.path.join(output_dir, prefix)
+        print("Writing to {}".format(output_prefix))
+        os.makedirs(output_prefix, exist_ok=True)
+        with open(os.path.join(output_prefix, 'response.json'), 'w') as f:
+            json.dump({'response': yearly_report}, f)
+        years = set(yearly_report['views'].keys()).union(yearly_report['downloads'].keys())
+        years.discard('total')
+        for year in years:
+            per_month_report = {
+                'views': handles[hdl]['views'].setdefault('month', {}).setdefault(year, {}),
+                'downloads': handles[hdl]['downloads'].setdefault('month', {}).setdefault(year, {})
+            }
+            filename = os.path.join(output_prefix, str(year), 'response.json')
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
+            with open(filename, 'w') as f:
+                json.dump({'response': {year: per_month_report}}, f)
+            months = set(per_month_report['views'].keys()).union(per_month_report['downloads'].keys())
+            months.discard('total')
+            for month in months:
+                per_day_report = {
+                    'views': handles[hdl]['views'].setdefault('day', {}).setdefault(year, {}).setdefault(month, {}),
+                    'downloads': handles[hdl]['downloads'].setdefault('day', {}).setdefault(year, {}).setdefault(month, {})
+                }
+                filename = os.path.join(output_prefix, str(year), str(month), 'response.json')
+                os.makedirs(os.path.dirname(filename), exist_ok=True)
+                with open(filename, 'w') as f:
+                    json.dump({'response': {year: {month: per_day_report}}}, f)
+
+    elapsed_time = time.perf_counter() - start_time
+    print("Elapsed time in {}: {}".format('handles', elapsed_time))
+
+
 def _segment2prefix(segment):
     if segment == 'overall':
         return ''
@@ -111,6 +185,41 @@ def _url_mapper(row, result_dict, result_key):
         'nb_hits': row['hits'],
         'nb_visits': row['visits']
     }
+
+
+def _handle_mapper(row, handle):
+    # sum of all under handle n-y-m-d doesn't matter -> views.total.nb_hits/visits -> year
+    # sum of all under handle in a year n-m-d doesn't matter -> views.total["2018"].nb_hits -> year
+    # sum of all under handle in a year-month n-d doesn't matter -> views.total["2018"]["3"].nb_hits -> month
+    # sum of all under handle in a year-month-day name doesn't matter ->views.total["2018"]["3"]["27"].nb_hits -> day
+    # sum of all under handle, year and name, m-d doesn't matter ->views["2018"].`name`.nb_hits -> year
+    # sum of all under handle, year, month and name, d doesn't matter ->views["2018"]["3"].`name`.nb_hits -> month
+    # sum of all under handle, year, month, day and name ->views["2018"]["3"]["27"].`name`.nb_hits -> day
+    y = row['year']
+    m = row['month']
+    d = row['day']
+    n = row['name']
+    hits = row['hits']
+    visits = row['visits']
+    for x in [
+        # year
+        handle.setdefault('year', {}).setdefault('total', {'nb_hits': 0, 'nb_visits': 0}),
+        handle['year']['total'].setdefault(y, {'nb_hits': 0, 'nb_visits': 0}),
+        handle['year'].setdefault(y, {}).setdefault(n, {'nb_hits': 0, 'nb_visits': 0}),
+
+        # month
+        handle.setdefault('month', {}).setdefault('total', {}).setdefault(y, {})
+            .setdefault(m, {'nb_hits': 0, 'nb_visits': 0}),
+        handle['month'].setdefault(y, {}).setdefault(m, {}).setdefault(n, {'nb_hits': 0, 'nb_visits': 0}),
+
+        # day
+        handle.setdefault('day', {}).setdefault('total', {}).setdefault(y, {})
+            .setdefault(m, {}).setdefault(d, {'nb_hits': 0, 'nb_visits': 0}),
+        handle['day'].setdefault(y, {}).setdefault(m, {}).setdefault(d, {})
+            .setdefault(n, {'nb_hits': 0, 'nb_visits': 0})
+    ]:
+        x['nb_hits'] += hits
+        x['nb_visits'] += visits
 
 
 _stats_kind2mapper = {
@@ -170,9 +279,9 @@ def main():
         get_visits(cursor)
         get_country(cursor)
         get_urls(cursor)
+        get_handles(cursor)
         elapsed_time = time.perf_counter() - start_time
         print("Elapsed time fetching all: {}".format(elapsed_time))
-        from datetime import datetime
         today = datetime.now()
         with open(os.path.join(output_dir, 'last_updated.txt'), 'w') as f:
             print(today, file=f)
