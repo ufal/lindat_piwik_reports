@@ -29,11 +29,11 @@ def _fetch_and_write(cursor, stats_kind):
         yearly_report, per_month_report, per_day_report = _process_results(cursor, mapper)
         _write_results(prefix, yearly_report, per_month_report, per_day_report)
         elapsed_time = time.perf_counter() - segment_start_time
-        print("Elapsed time in {} segment '{}': {}".format(stats_kind, segment, elapsed_time))
+        log.info("Elapsed time in %s segment '%s': %s", stats_kind, segment, elapsed_time)
         # download report from overall???
         # elif row['idsite'] == 4:
     elapsed_time = time.perf_counter() - start_time
-    print("Elapsed time in {}: {}".format(stats_kind, elapsed_time))
+    log.info("Elapsed time in %s: %s",stats_kind, elapsed_time)
 
 
 def get_views(cursor):
@@ -74,9 +74,9 @@ def get_urls(cursor):
         prefix = os.path.join('urls', _segment2prefix(segment))
         _write_results(prefix, yearly_report, per_month_report, {})
         elapsed_time = time.perf_counter() - segment_start_time
-        print("Elapsed time in {} segment '{}': {}".format('urls', segment, elapsed_time))
+        log.info("Elapsed time in %s segment '%s': %s", 'urls', segment, elapsed_time)
     elapsed_time = time.perf_counter() - start_time
-    print("Elapsed time in {}: {}".format('urls', elapsed_time))
+    log.info("Elapsed time in %s: %s", 'urls', elapsed_time)
 
 
 def get_handles(cursor):
@@ -102,14 +102,14 @@ def get_handles(cursor):
                 validate_filename(hdl_prefix)
                 validate_filename(hdl_suffix)
             except Exception as e:
-                print(f"Skipping row '{row}'\n", file=sys.stderr)
+                log.debug("Skipping (invalid filename) handle='%s'\nname='%s'", row['handle'], row['name'])
                 continue
 
             handle = handles.setdefault(row['handle'], {'views': {}, 'downloads': {}})
             handle = handle.setdefault(what, {})
             _handle_mapper(row, handle)
         elapsed_time = time.perf_counter() - segment_start_time
-        print("Elapsed time in {} '{}': {}".format('handles', what, elapsed_time))
+        log.info("Elapsed time in %s '%s': %s", 'handles', what, elapsed_time)
 
     for hdl in handles.keys():
         hdl_prefix, hdl_suffix = hdl.split('/', 1)
@@ -117,8 +117,8 @@ def get_handles(cursor):
             validate_filename(hdl_prefix)
             validate_filename(hdl_suffix)
         except ValidationError as e:
-            print(f"{e}\n", file=sys.stderr)
-            print(f"Skipping '{hdl}'\n", file=sys.stderr)
+            log.error("%s", e)
+            log.debug("Skipping writing of '%s'", hdl)
             continue
 
         prefix = os.path.join('handle', hdl_prefix, hdl_suffix)
@@ -127,7 +127,7 @@ def get_handles(cursor):
             'downloads': handles[hdl]['downloads'].setdefault('year', {})
         }
         output_prefix = os.path.join(output_dir, prefix)
-        print("Writing to {}".format(output_prefix))
+        log.debug("Writing to %s", output_prefix)
         os.makedirs(output_prefix, exist_ok=True)
         with open(os.path.join(output_prefix, 'response.json'), 'w') as f:
             json.dump({'response': yearly_report}, f)
@@ -155,7 +155,7 @@ def get_handles(cursor):
                     json.dump({'response': {year: {month: per_day_report}}}, f)
 
     elapsed_time = time.perf_counter() - start_time
-    print("Elapsed time in {}: {}".format('handles', elapsed_time))
+    log.info("Elapsed time in %s: %s", 'handles', elapsed_time)
 
 
 def _segment2prefix(segment):
@@ -267,7 +267,7 @@ def _process_results(cursor, mapper):
 
 def _write_results(prefix, yearly_report, per_month_report, per_day_report):
     output_prefix = os.path.join(output_dir, prefix)
-    print("Writing to {}".format(output_prefix))
+    log.info("Writing to %s", output_prefix)
     os.makedirs(output_prefix, exist_ok=True)
     with open(os.path.join(output_prefix, 'response.json'), 'w') as f:
         json.dump({'response': yearly_report}, f)
@@ -294,7 +294,7 @@ def main():
         get_urls(cursor)
         get_handles(cursor)
         elapsed_time = time.perf_counter() - start_time
-        print("Elapsed time fetching all: {}".format(elapsed_time))
+        log.info("Elapsed time fetching all: %s", elapsed_time)
         today = datetime.now()
         with open(os.path.join(output_dir, 'last_updated.txt'), 'w') as f:
             print(today, file=f)
