@@ -1,7 +1,8 @@
 from datetime import datetime
 import json
+import logging as log
 import os
-import sys
+import re
 import time
 
 import mysql.connector
@@ -10,7 +11,11 @@ from pathvalidate import ValidationError, validate_filename
 from config import *
 from statements import statements, segment2where
 
+lvl = os.environ.get('LOG_LEVEL', 'INFO')
+log.basicConfig(level=getattr(log, lvl.upper(), None))
+
 segments = ['overall', 'downloads', 'repository', 'others', 'services', 'lrt', 'lrt-downloads']
+handle_pattern = re.compile('.*handle/([-\w+]+)/([-\w+]+)/?.*', re.ASCII)
 
 
 def _fetch_and_write(cursor, stats_kind):
@@ -86,6 +91,14 @@ def get_handles(cursor):
                 continue
             try:
                 hdl_prefix, hdl_suffix = row['handle'].split('/', 1)
+                m = handle_pattern.match(row['name'])
+                if m:
+                    extracted_hdl_prefix, extracted_hdl_suffix = m.groups()
+                    if not (hdl_prefix == extracted_hdl_prefix and hdl_suffix == extracted_hdl_suffix):
+                        log.debug("Skipping row '%s'", row)
+                        continue
+                else:
+                    continue
                 validate_filename(hdl_prefix)
                 validate_filename(hdl_suffix)
             except Exception as e:
@@ -108,7 +121,7 @@ def get_handles(cursor):
             print(f"Skipping '{hdl}'\n", file=sys.stderr)
             continue
 
-        prefix = os.path.join('handles', hdl_prefix, hdl_suffix)
+        prefix = os.path.join('handle', hdl_prefix, hdl_suffix)
         yearly_report = {
             'views': handles[hdl]['views'].setdefault('year', {}),
             'downloads': handles[hdl]['downloads'].setdefault('year', {})
