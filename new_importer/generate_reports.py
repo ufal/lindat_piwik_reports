@@ -134,25 +134,63 @@ def get_handles(cursor):
         years = set(yearly_report['views'].keys()).union(yearly_report['downloads'].keys())
         years.discard('total')
         for year in years:
+            views = {
+                year: handles[hdl]['views'].setdefault('month', {}).setdefault(year, {}),
+                'total': {
+                    year: handles[hdl]['views'].setdefault('month', {}).setdefault('total', {}).setdefault(year, {})
+                }
+            }
+            downloads = {
+                year: handles[hdl]['downloads'].setdefault('month', {}).setdefault(year, {}),
+                'total': {
+                    year: handles[hdl]['downloads'].setdefault('month', {}).setdefault('total', {})
+                    .setdefault(year, {})
+                }
+            }
             per_month_report = {
-                'views': handles[hdl]['views'].setdefault('month', {}).setdefault(year, {}),
-                'downloads': handles[hdl]['downloads'].setdefault('month', {}).setdefault(year, {})
+                'views': views,
+                'downloads': downloads
             }
             filename = os.path.join(output_prefix, str(year), 'response.json')
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             with open(filename, 'w') as f:
-                json.dump({'response': {year: per_month_report}}, f)
-            months = set(per_month_report['views'].keys()).union(per_month_report['downloads'].keys())
-            months.discard('total')
+                json.dump({'response': per_month_report}, f)
+            months = set(views[year].keys()).union(downloads[year].keys())
             for month in months:
+                views = {
+                    year: {
+                        month: handles[hdl]['views'].setdefault('day', {}).setdefault(year, {}).setdefault(month, {}),
+                    },
+                    'total':
+                        {
+                            year: {
+                                month:
+                                    handles[hdl]['views'].setdefault('day', {}).setdefault('total', {})
+                                    .setdefault(year, {}).setdefault(month, {})
+                            }
+                        }
+                }
+                downloads = {
+                    year: {
+                        month: handles[hdl]['downloads'].setdefault('day', {}).setdefault(year, {}).setdefault(month, {}),
+                    },
+                    'total':
+                        {
+                            year: {
+                                month:
+                                    handles[hdl]['downloads'].setdefault('day', {}).setdefault('total', {})
+                                    .setdefault(year, {}).setdefault(month, {})
+                            }
+                        }
+                }
                 per_day_report = {
-                    'views': handles[hdl]['views'].setdefault('day', {}).setdefault(year, {}).setdefault(month, {}),
-                    'downloads': handles[hdl]['downloads'].setdefault('day', {}).setdefault(year, {}).setdefault(month, {})
+                    'views': views,
+                    'downloads': downloads
                 }
                 filename = os.path.join(output_prefix, str(year), str(month), 'response.json')
                 os.makedirs(os.path.dirname(filename), exist_ok=True)
                 with open(filename, 'w') as f:
-                    json.dump({'response': {year: {month: per_day_report}}}, f)
+                    json.dump({'response': per_day_report}, f)
 
     elapsed_time = time.perf_counter() - start_time
     log.info("Elapsed time in %s: %s", 'handles', elapsed_time)
