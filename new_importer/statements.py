@@ -57,13 +57,13 @@ SELECT hits, visits, year, month, name,
         ELSE 0
     END as row_number,
     @last_date:=concat(year, '-', month) FROM (
-SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, idsite, YEAR(server_time) as year, MONTH(server_time) as month, name
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, idsite, YEAR(server_time) as year, MONTH(server_time) as month, substring_index(name, '?', 1) as name
     FROM piwik_log_link_visit_action v
     LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
     WHERE type = 1
     AND server_time >= '2014-01-01'
     {}
-    GROUP BY year, month, name
+    GROUP BY year, month, substring_index(name, '?', 1)
     order by year, month, hits desc
  ) data ) data_numbered where row_number < 100;
 """
@@ -78,36 +78,40 @@ SELECT hits, visits, year, name,
         ELSE 0
     END as row_number,
     @last_date:=year FROM (
-SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(server_time) as year, name
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(server_time) as year, substring_index(name, '?', 1) as name
     FROM piwik_log_link_visit_action v
     LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
     WHERE type = 1
     AND server_time >= '2014-01-01'
     {}
-    GROUP BY year, name
+    GROUP BY year, substring_index(name, '?', 1)
     order by year, hits desc
  ) data ) data_numbered where row_number < 100;
 """
 
 top_urls_total = """
-SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, name
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, substring_index(name, '?', 1) as name
     FROM piwik_log_link_visit_action v
     LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
     WHERE type = 1
     AND server_time >= '2014-01-01'
     {}
-    GROUP BY name
+    GROUP BY substring_index(name, '?', 1)
     order by hits desc
     limit 100
 """
 
 # not using rollup; can't get all the needed combinations without GROUPING SETS
 # visits may be higher due to javascript (see the # cleanup); handle is derived from the url there might be unsafe chars
+# substring_index(hdl, '?', 1) ~ search for first '?' in hdl and return all to the left of it
 handles = """
 select substring_index(substring_index(hdl, '?', 1), '#', 1) as handle, name, count(*) as hits,
  count( DISTINCT idvisit, idaction) as visits, idsite, YEAR(server_time) as year, 
  MONTH(server_time) as month, DAY(server_time) as day FROM (
-SELECT if(substring(name, locate('handle', name) + 7) like '%/%/%', substring_index(substring(name, locate('handle', name) + 7), '/', 2), substring(name, locate('handle', name) + 7)) as hdl, name, idvisit, idaction, idsite, server_time
+SELECT if(substring(name, locate('handle', name) + 7) like '%/%/%',
+            substring_index(substring(name, locate('handle', name) + 7), '/', 2),
+            substring(name, locate('handle', name) + 7)) as hdl,
+    substring_index(name, '?', 1) as name, idvisit, idaction, idsite, server_time
     FROM piwik_log_link_visit_action v
         LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
             WHERE type = 1 AND server_time >= '2014-01-01' {} 
