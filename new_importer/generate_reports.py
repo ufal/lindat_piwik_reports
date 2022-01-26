@@ -111,6 +111,7 @@ def get_handles(cursor):
         elapsed_time = time.perf_counter() - segment_start_time
         log.info("Elapsed time in %s '%s': %s", 'handles', what, elapsed_time)
 
+    log.debug("There are %s items in the handles dict", len(handles))
     for hdl in handles.keys():
         hdl_prefix, hdl_suffix = hdl.split('/', 1)
         try:
@@ -322,6 +323,7 @@ def _write_results(prefix, yearly_report, per_month_report, per_day_report):
 
 
 def main():
+    log.debug("Debug logging is enabled")
     try:
         db = mysql.connector.connect(**db_config)
         cursor = db.cursor(dictionary=True)
