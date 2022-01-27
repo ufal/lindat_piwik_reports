@@ -7,6 +7,7 @@ import time
 
 import mysql.connector
 from pathvalidate import ValidationError, validate_filename
+import pycountry
 
 from config import *
 from statements import statements, segment2where
@@ -197,6 +198,41 @@ def get_handles(cursor):
     log.info("Elapsed time in %s: %s", 'handles', elapsed_time)
 
 
+def get_handles_country(cursor):
+    start_time = time.perf_counter()
+    query = statements['handles_country']
+    handles_country_report = {}
+    for result in cursor.execute(query, multi=True):
+        if result.with_rows:
+            for row in result:
+                hdl = row['handle']
+                date = str(row['year']) + '/' + str(row['month'])
+                countries = handles_country_report.setdefault(hdl, {}).setdefault(date, [])
+                countries.append({
+                    'label': _country_lookup(row['location_country']),
+                    'nb_visits': row['visits']
+                })
+    for hdl, d in handles_country_report.items():
+        hdl_prefix, hdl_suffix = hdl.split('/', 1)
+        # Expects this is run after get_handles and dirs are created; if not skip
+        for date, countries in d.items():
+            output_prefix = os.path.join(output_dir, 'handle', hdl_prefix, hdl_suffix, date)
+            if not os.path.isdir(output_prefix):
+                log.debug("Skipping writing of '%s'; '%s' is not a dir", hdl, output_prefix)
+                continue
+            try:
+                validate_filename(hdl_prefix)
+                validate_filename(hdl_suffix)
+            except ValidationError as e:
+                log.error("%s", e)
+                log.debug("Skipping writing of '%s'", hdl)
+                continue
+            with open(os.path.join(output_prefix, 'country_response.json'), 'w') as f:
+                json.dump({date: countries}, f)
+    elapsed_time = time.perf_counter() - start_time
+    log.info("Elapsed time in %s: %s", 'handles country', elapsed_time)
+
+
 def _segment2prefix(segment):
     if segment == 'overall':
         return ''
@@ -322,17 +358,36 @@ def _write_results(prefix, yearly_report, per_month_report, per_day_report):
                 json.dump({'response': {year: {month: per_day_report[year][month]}}}, f)
 
 
+def _country_lookup(code):
+    code = code.upper()
+    if code == 'AP':
+        ret = 'Asia/Pacific'
+    elif code == 'EU':
+        ret = 'Europe'
+    elif code == 'A1':
+        ret = 'anonymous proxy'
+    elif code == 'A2':
+        ret = 'satellite provider'
+    elif code == 'XX':
+        ret = 'Unknown'
+    else:
+        ret = pycountry.countries.lookup(code).name
+    return ret
+
 def main():
     log.debug("Debug logging is enabled")
     try:
         db = mysql.connector.connect(**db_config)
         cursor = db.cursor(dictionary=True)
         start_time = time.perf_counter()
+        # These are for /statistics report
         get_views(cursor)
         get_visits(cursor)
         get_country(cursor)
         get_urls(cursor)
+        # These are for repository
         get_handles(cursor)
+        get_handles_country(cursor)
         elapsed_time = time.perf_counter() - start_time
         log.info("Elapsed time fetching all: %s", elapsed_time)
         today = datetime.now()

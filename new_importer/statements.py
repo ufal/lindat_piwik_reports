@@ -120,6 +120,32 @@ SELECT if(substring(name, locate('handle', name) + 7) like '%/%/%',
                         GROUP BY handle, name, year, month, day
 """
 
+handles_country = """
+set @row_number=0;
+set @last_group = '';
+SELECT handle, location_country, visits, year, month, row_number FROM
+(
+SELECT handle, location_country, visits, year, month,     
+    @row_number:=CASE
+    WHEN @last_group = CONCAT(handle, '/', year, '-', month) THEN @row_number + 1
+    ELSE 0
+    END as row_number,
+    @last_group:=CONCAT(handle, '/', year, '-', month) FROM
+(
+SELECT substring_index(substring_index(if(substring(name, locate('handle', name) + 7) like '%/%/%',
+            substring_index(substring(name, locate('handle', name) + 7), '/', 2),
+            substring(name, locate('handle', name) + 7)), '?', 1), '#', 1) as handle,
+       location_country, count( DISTINCT v.idvisit) as visits, YEAR(server_time) as year, MONTH(server_time) as month
+    FROM piwik_log_visit v
+    LEFT JOIN piwik_log_link_visit_action ON v.idvisit = piwik_log_link_visit_action.idvisit
+    LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
+            WHERE server_time >= '2014-01-01' and v.idsite=2 and name like '%/handle/%/%'
+                        GROUP BY handle, location_country, year, month
+            ORDER BY handle, year, month, visits desc
+) data ) data_numbered where row_number < 10                       
+    ;
+"""
+
 # Note: for this to work you must alias the correct table with idsite as "v"
 segment2where = {
     'overall': 'AND v.idsite IN (2,4) ',
@@ -154,5 +180,6 @@ statements = {
     'urls_total': top_urls_total,
     'urls_year': top_urls_by_year,
     'urls_month': top_urls_by_month,
-    'handles': handles
+    'handles': handles,
+    'handles_country': handles_country
 }
