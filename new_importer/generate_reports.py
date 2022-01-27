@@ -228,7 +228,9 @@ def get_handles_country(cursor):
                 log.error("%s", e)
                 log.debug("Skipping writing of '%s'", hdl)
                 continue
-            with open(os.path.join(output_prefix, 'country_response.json'), 'w') as f:
+            output_prefix = os.path.join(output_prefix, 'country')
+            os.mkdir(output_prefix)
+            with open(os.path.join(output_prefix, 'response.json'), 'w') as f:
                 json.dump({date.replace('/', '-'): countries}, f)
     elapsed_time = time.perf_counter() - start_time
     log.info("Elapsed time in %s: %s", 'handles country', elapsed_time)
