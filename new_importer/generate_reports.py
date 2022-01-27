@@ -16,7 +16,7 @@ lvl = os.environ.get('LOG_LEVEL', 'INFO')
 log.basicConfig(level=getattr(log, lvl.upper(), None))
 
 segments = ['overall', 'downloads', 'repository', 'others', 'services', 'lrt', 'lrt-downloads']
-handle_pattern = re.compile('.*handle/([-\w+]+)/([-\w+]+)/?.*', re.ASCII)
+handle_pattern = re.compile('.*handle/([-\w+.]+)/([-\w+.]+)/?.*', re.ASCII)
 
 
 def _fetch_and_write(cursor, stats_kind):
@@ -99,6 +99,7 @@ def get_handles(cursor):
                         log.debug("Skipping row '%s'", row)
                         continue
                 else:
+                    log.debug("Skipping, row['name'] not matching pattern '%s'", row)
                     continue
                 validate_filename(hdl_prefix)
                 validate_filename(hdl_suffix)
@@ -373,6 +374,7 @@ def _country_lookup(code):
     else:
         ret = pycountry.countries.lookup(code).name
     return ret
+
 
 def main():
     log.debug("Debug logging is enabled")
