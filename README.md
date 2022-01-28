@@ -82,8 +82,9 @@ returns nb_hits and nb_visits with label of the page.
 ```
 nb_hits is equivalent to nb_pageviews
 
-### TBD /statistics/handle?h=[handle]
+### /statistics/handle?h=[handle]
 Return the views for specific handle.
+with `country=true` return the top 10 countries
 
 
 ## API Params
