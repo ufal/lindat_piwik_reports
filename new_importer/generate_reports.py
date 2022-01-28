@@ -251,7 +251,7 @@ def _format_query_for_segment(query, segment):
 def _views_mapper(row, result_dict, result_key):
     result_dict[result_key] = {
         'nb_pageviews': row['hits'],
-        'nb_uniq_pageviews': row['visits']
+        'nb_uniq_pageviews': row['uniq_pageviews']
     }
 
 
@@ -278,6 +278,9 @@ def _url_mapper(row, result_dict, result_key):
     }
 
 
+_default_handle_metrics = {'nb_hits': 0, 'nb_visits': 0, 'nb_uniq_pageviews': 0, 'nb_uniq_visitors': 0}
+
+
 def _handle_mapper(row, handle):
     # sum of all under handle n-y-m-d doesn't matter -> views.total.nb_hits/visits -> year
     # sum of all under handle in a year n-m-d doesn't matter -> views.total["2018"].nb_hits -> year
@@ -292,25 +295,29 @@ def _handle_mapper(row, handle):
     n = row['name']
     hits = row['hits']
     visits = row['visits']
+    uniq_pageviews = row['uniq_pageviews']
+    visitors = row['visitors']
     for x in [
         # year
-        handle.setdefault('year', {}).setdefault('total', {'nb_hits': 0, 'nb_visits': 0}),
-        handle['year']['total'].setdefault(y, {'nb_hits': 0, 'nb_visits': 0}),
-        handle['year'].setdefault(y, {}).setdefault(n, {'nb_hits': 0, 'nb_visits': 0}),
+        handle.setdefault('year', {}).setdefault('total', _default_handle_metrics.copy()),
+        handle['year']['total'].setdefault(y, _default_handle_metrics.copy()),
+        handle['year'].setdefault(y, {}).setdefault(n, _default_handle_metrics.copy()),
 
         # month
         handle.setdefault('month', {}).setdefault('total', {}).setdefault(y, {})
-            .setdefault(m, {'nb_hits': 0, 'nb_visits': 0}),
-        handle['month'].setdefault(y, {}).setdefault(m, {}).setdefault(n, {'nb_hits': 0, 'nb_visits': 0}),
+            .setdefault(m, _default_handle_metrics.copy()),
+        handle['month'].setdefault(y, {}).setdefault(m, {}).setdefault(n, _default_handle_metrics.copy()),
 
         # day
         handle.setdefault('day', {}).setdefault('total', {}).setdefault(y, {})
-            .setdefault(m, {}).setdefault(d, {'nb_hits': 0, 'nb_visits': 0}),
+            .setdefault(m, {}).setdefault(d, _default_handle_metrics.copy()),
         handle['day'].setdefault(y, {}).setdefault(m, {}).setdefault(d, {})
-            .setdefault(n, {'nb_hits': 0, 'nb_visits': 0})
+            .setdefault(n, _default_handle_metrics.copy())
     ]:
         x['nb_hits'] += hits
         x['nb_visits'] += visits
+        x['nb_uniq_visitors'] += visitors
+        x['nb_uniq_pageviews'] += uniq_pageviews
 
 
 _stats_kind2mapper = {

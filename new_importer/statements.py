@@ -6,7 +6,7 @@
 # (AND returns null if any of the operands is null)
 # ; but that doesn't seem to be faster than without the filtering
 hits_visits_aggregated = """
-SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, idsite, YEAR(server_time) as year, 
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as uniq_pageviews, idsite, YEAR(server_time) as year, 
 MONTH(server_time) as month, DAY(server_time) as day
     FROM piwik_log_link_visit_action v
         LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
@@ -42,6 +42,13 @@ SELECT location_country, count(distinct v.idvisit) as visits, count( DISTINCT v.
                         (v.idsite AND day AND month AND year) IS NULL
                         ;
 """
+
+
+##### URLs #####
+# if you have a concrete url (idaction is fixed) uniq_pageviews should be the same thing as visits;
+# ie. just distinct idvisit
+# The piwik_charts actually calls these "Unique views", but looks for nb_visits. We are modifying the name (removing
+# url params) so there might be multiple idaction involved.
 
 # No window functions/partition by in mysql 5.5;
 # so the inner most select grabs the data and orders them
@@ -101,20 +108,29 @@ SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, substring
     limit 100
 """
 
+##### /URLs #####
+
+##### handles - used by the repository not the summary /statistics #####
+# see the URLs comment about visits and uniq pageviews, note that we are exposing both metrics and also visitors for
+# pdf export
+
 # not using rollup; can't get all the needed combinations without GROUPING SETS
 # visits may be higher due to javascript (see the # cleanup); handle is derived from the url there might be unsafe chars
 # substring_index(hdl, '?', 1) ~ search for first '?' in hdl and return all to the left of it
 # the query removes url params and the domain (ie. lindat.cz and lindat.mff.cuni.cz will be grouped together)
 handles = """
 select substring_index(substring_index(hdl, '?', 1), '#', 1) as handle, name, count(*) as hits,
- count( DISTINCT idvisit, idaction) as visits, idsite, YEAR(server_time) as year, 
- MONTH(server_time) as month, DAY(server_time) as day FROM (
+ count( DISTINCT idvisit, idaction) as uniq_pageviews,
+ count( DISTINCT idvisit ) as visits,
+ count( DISTINCT idvisitor ) as visitors,
+ idsite, YEAR(server_time) as year, MONTH(server_time) as month, DAY(server_time) as day FROM (
 SELECT if(substring(name, locate('handle', name) + 7) like '%/%/%',
             substring_index(substring(name, locate('handle', name) + 7), '/', 2),
             substring(name, locate('handle', name) + 7)) as hdl,
-    substring_index(replace(name, 'lindat.cz', 'lindat.mff.cuni.cz'), '?', 1) as name, idvisit, idaction, idsite, server_time
-    FROM piwik_log_link_visit_action v
-        LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
+    substring_index(replace(name, 'lindat.cz', 'lindat.mff.cuni.cz'), '?', 1) as name, v.idvisit, idaction, v.idsite, v.idvisitor, server_time
+    FROM piwik_log_visit v
+    LEFT JOIN piwik_log_link_visit_action ON v.idvisit = piwik_log_link_visit_action.idvisit
+    LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
             WHERE type = 1 AND server_time >= '2014-01-01' {} 
     ) visits_actions
                         GROUP BY handle, name, year, month, day
@@ -145,6 +161,8 @@ SELECT substring_index(substring_index(if(substring(name, locate('handle', name)
 ) data ) data_numbered where row_number < 10                       
     ;
 """
+
+##### /handles #####
 
 # Note: for this to work you must alias the correct table with idsite as "v"
 segment2where = {
