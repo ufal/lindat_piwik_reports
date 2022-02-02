@@ -94,7 +94,7 @@ def get_handles(db):
         db_fetch_elapsed = time.perf_counter() - db_fetch_start
         log.info("Elapsed time in handles fetching %s: %s", what, db_fetch_elapsed)
         filter_start = time.perf_counter()
-        df = df[df.apply(_sensible_handle_filter, 'columns')]
+        df = df[list(map(_sensible_handle_filter, df['handle'], df['name']))]
         filter_elapsed = time.perf_counter() - filter_start
         log.info("Elapsed time in handles filtering %s: %s", what, filter_elapsed)
         data[what] = df
@@ -309,24 +309,24 @@ aggregates = {
 }
 
 
-def _sensible_handle_filter(row):
-    if not row['handle']:
+def _sensible_handle_filter(handle, name):
+    if not handle:
         return False
     try:
-        hdl_prefix, hdl_suffix = row['handle'].split('/', 1)
-        m = handle_pattern.match(row['name'])
+        hdl_prefix, hdl_suffix = handle.split('/', 1)
+        m = handle_pattern.match(name)
         if m:
             extracted_hdl_prefix, extracted_hdl_suffix = m.groups()
             if not (hdl_prefix == extracted_hdl_prefix and hdl_suffix == extracted_hdl_suffix):
-                log.debug("Skipping row handle='%s'; name='%s'", row['handle'], row['name'])
+                log.debug("Skipping row handle='%s'; name='%s'", handle, name)
                 return False
         else:
-            log.debug("Skipping, row['name'] not matching pattern '%s'", row['name'])
+            log.debug("Skipping, name not matching pattern '%s'", name)
             return False
         validate_filename(hdl_prefix)
         validate_filename(hdl_suffix)
     except Exception as e:
-        log.debug("Skipping (invalid filename) handle='%s'\nname='%s'", row['handle'], row['name'])
+        log.debug("Skipping (invalid filename) handle='%s'\nname='%s'", handle, name)
         return False
     return True
 
