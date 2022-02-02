@@ -114,16 +114,13 @@ SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, substring
 # see the URLs comment about visits and uniq pageviews, note that we are exposing both metrics and also visitors for
 # pdf export
 
-# not using rollup; can't get all the needed combinations without GROUPING SETS
+# not using rollup; can't get all the needed combinations without GROUPING SETS, the grouping is done in code with pandas
 # visits may be higher due to javascript (see the # cleanup); handle is derived from the url there might be unsafe chars
 # substring_index(hdl, '?', 1) ~ search for first '?' in hdl and return all to the left of it
 # the query removes url params and the domain (ie. lindat.cz and lindat.mff.cuni.cz will be grouped together)
 handles = """
-select substring_index(substring_index(hdl, '?', 1), '#', 1) as handle, name, count(*) as hits,
- count( DISTINCT idvisit, idaction) as uniq_pageviews,
- count( DISTINCT idvisit ) as visits,
- count( DISTINCT idvisitor ) as visitors,
- idsite, YEAR(server_time) as year, MONTH(server_time) as month, DAY(server_time) as day FROM (
+select substring_index(substring_index(hdl, '?', 1), '#', 1) as handle, name, idvisit, idaction, concat(idvisit,'/',idaction) as visit_action, hex(idvisitor) as 
+idvisitor, idsite, YEAR(server_time) as year, MONTH(server_time) as month, DAY(server_time) as day FROM (
 SELECT if(substring(name, locate('handle', name) + 7) like '%/%/%',
             substring_index(substring(name, locate('handle', name) + 7), '/', 2),
             substring(name, locate('handle', name) + 7)) as hdl,
@@ -133,7 +130,6 @@ SELECT if(substring(name, locate('handle', name) + 7) like '%/%/%',
     LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
             WHERE type = 1 AND server_time >= '2014-01-01' {} 
     ) visits_actions
-                        GROUP BY handle, name, year, month, day
 """
 
 handles_country = """

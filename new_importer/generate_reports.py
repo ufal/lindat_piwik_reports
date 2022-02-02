@@ -6,7 +6,9 @@ import re
 import time
 
 import mysql.connector
+import numpy as np
 from pathvalidate import ValidationError, validate_filename
+import pandas as pd
 import pycountry
 
 from config import *
@@ -34,7 +36,7 @@ def _fetch_and_write(cursor, stats_kind):
         # download report from overall???
         # elif row['idsite'] == 4:
     elapsed_time = time.perf_counter() - start_time
-    log.info("Elapsed time in %s: %s",stats_kind, elapsed_time)
+    log.info("Elapsed time in %s: %s", stats_kind, elapsed_time)
 
 
 def get_views(cursor):
@@ -80,123 +82,75 @@ def get_urls(cursor):
     log.info("Elapsed time in %s: %s", 'urls', elapsed_time)
 
 
-def get_handles(cursor):
+def get_handles(db):
     start_time = time.perf_counter()
-    handles = {}
-    for what in ['views', 'downloads']:  #
-        segment_start_time = time.perf_counter()
+    result = {}
+    stats_kinds = ['views', 'downloads']
+    data = {}
+    for what in stats_kinds:
         query = _format_query_for_segment(statements['handles'], 'handle-' + what)
-        cursor.execute(query)
-        for row in cursor:
-            if not row['handle']:
-                continue
-            try:
-                hdl_prefix, hdl_suffix = row['handle'].split('/', 1)
-                m = handle_pattern.match(row['name'])
-                if m:
-                    extracted_hdl_prefix, extracted_hdl_suffix = m.groups()
-                    if not (hdl_prefix == extracted_hdl_prefix and hdl_suffix == extracted_hdl_suffix):
-                        log.debug("Skipping row '%s'", row)
-                        continue
-                else:
-                    log.debug("Skipping, row['name'] not matching pattern '%s'", row)
-                    continue
-                validate_filename(hdl_prefix)
-                validate_filename(hdl_suffix)
-            except Exception as e:
-                log.debug("Skipping (invalid filename) handle='%s'\nname='%s'", row['handle'], row['name'])
-                continue
+        db_fetch_start = time.perf_counter()
+        df = pd.read_sql(query, db)
+        db_fetch_elapsed = time.perf_counter() - db_fetch_start
+        log.info("Elapsed time in handles fetching %s: %s", what, db_fetch_elapsed)
+        filter_start = time.perf_counter()
+        df = df[df.apply(_sensible_handle_filter, 'columns')]
+        filter_elapsed = time.perf_counter() - filter_start
+        log.info("Elapsed time in handles filtering %s: %s", what, filter_elapsed)
+        data[what] = df
 
-            handle = handles.setdefault(row['handle'], {'views': {}, 'downloads': {}})
-            handle = handle.setdefault(what, {})
-            _handle_mapper(row, handle)
-        elapsed_time = time.perf_counter() - segment_start_time
-        log.info("Elapsed time in %s '%s': %s", 'handles', what, elapsed_time)
-
-    log.debug("There are %s items in the handles dict", len(handles))
-    for hdl in handles.keys():
-        hdl_prefix, hdl_suffix = hdl.split('/', 1)
-        try:
-            validate_filename(hdl_prefix)
-            validate_filename(hdl_suffix)
-        except ValidationError as e:
-            log.error("%s", e)
-            log.debug("Skipping writing of '%s'", hdl)
-            continue
-
-        prefix = os.path.join('handle', hdl_prefix, hdl_suffix)
-        yearly_report = {
-            'views': handles[hdl]['views'].setdefault('year', {}),
-            'downloads': handles[hdl]['downloads'].setdefault('year', {})
-        }
-        output_prefix = os.path.join(output_dir, prefix)
-        log.debug("Writing to %s", output_prefix)
-        os.makedirs(output_prefix, exist_ok=True)
-        with open(os.path.join(output_prefix, 'response.json'), 'w') as f:
-            json.dump({'response': yearly_report}, f)
-        years = set(yearly_report['views'].keys()).union(yearly_report['downloads'].keys())
-        years.discard('total')
-        for year in years:
-            views = {
-                year: handles[hdl]['views'].setdefault('month', {}).setdefault(year, {}),
-                'total': {
-                    year: handles[hdl]['views'].setdefault('month', {}).setdefault('total', {}).setdefault(year, {})
-                }
-            }
-            downloads = {
-                year: handles[hdl]['downloads'].setdefault('month', {}).setdefault(year, {}),
-                'total': {
-                    year: handles[hdl]['downloads'].setdefault('month', {}).setdefault('total', {})
-                    .setdefault(year, {})
-                }
-            }
-            per_month_report = {
-                'views': views,
-                'downloads': downloads
-            }
-            filename = os.path.join(output_prefix, str(year), 'response.json')
-            os.makedirs(os.path.dirname(filename), exist_ok=True)
-            with open(filename, 'w') as f:
-                json.dump({'response': per_month_report}, f)
-            months = set(views[year].keys()).union(downloads[year].keys())
-            for month in months:
-                views = {
-                    year: {
-                        month: handles[hdl]['views'].setdefault('day', {}).setdefault(year, {}).setdefault(month, {}),
-                    },
-                    'total':
-                        {
-                            year: {
-                                month:
-                                    handles[hdl]['views'].setdefault('day', {}).setdefault('total', {})
-                                    .setdefault(year, {}).setdefault(month, {})
-                            }
-                        }
-                }
-                downloads = {
-                    year: {
-                        month: handles[hdl]['downloads'].setdefault('day', {}).setdefault(year, {}).setdefault(month, {}),
-                    },
-                    'total':
-                        {
-                            year: {
-                                month:
-                                    handles[hdl]['downloads'].setdefault('day', {}).setdefault('total', {})
-                                    .setdefault(year, {}).setdefault(month, {})
-                            }
-                        }
-                }
-                per_day_report = {
-                    'views': views,
-                    'downloads': downloads
-                }
-                filename = os.path.join(output_prefix, str(year), str(month), 'response.json')
-                os.makedirs(os.path.dirname(filename), exist_ok=True)
-                with open(filename, 'w') as f:
-                    json.dump({'response': per_day_report}, f)
-
+    # with day resolution
+    for what in stats_kinds:
+        df = data[what]
+        df.groupby(["handle", "name", "year", "month", "day"]) \
+            .agg(**aggregates).reset_index().apply(
+            lambda row: _handles_mapper(result, row, ['handle', what, 'year', 'month', 'day', 'name']),
+            axis=1
+        )
+        df.groupby(["handle", "year", "month", "day"]) \
+            .agg(**aggregates).reset_index().apply(
+            lambda row: _handles_mapper(result, row, ['handle', what, 'total', 'year', 'month', 'day']),
+            axis=1
+        )
+    _write_handle_result(result, 'day')
+    result = {}
+    # with month resolution
+    for what in stats_kinds:
+        df = data[what]
+        df.groupby(["handle", "name", "year", "month"]) \
+            .agg(**aggregates).reset_index().apply(
+            lambda row: _handles_mapper(result, row, ['handle', what, 'year', 'month', 'name']),
+            axis=1
+        )
+        df.groupby(["handle", "year", "month"]) \
+            .agg(**aggregates).reset_index().apply(
+            lambda row: _handles_mapper(result, row, ['handle', what, 'total', 'year', 'month']),
+            axis=1
+        )
+    _write_handle_result(result, 'month')
+    result = {}
+    # with year resolution
+    for what in stats_kinds:
+        df = data[what]
+        df.groupby(["handle", "name", "year"]) \
+            .agg(**aggregates).reset_index().apply(
+            lambda row: _handles_mapper(result, row, ['handle', what, 'year', 'name']),
+            axis=1
+        )
+        df.groupby(["handle", "year"]) \
+            .agg(**aggregates).reset_index().apply(
+            lambda row: _handles_mapper(result, row, ['handle', what, 'total', 'year']),
+            axis=1
+        )
+        # grand total
+        df.groupby(["handle"]) \
+            .agg(**aggregates).reset_index().apply(
+            lambda row: _handles_mapper(result, row, ['handle', what, 'total']),
+            axis=1
+        )
+    _write_handle_result(result, 'year')
     elapsed_time = time.perf_counter() - start_time
-    log.info("Elapsed time in %s: %s", 'handles', elapsed_time)
+    log.info("Elapsed time in handles: %s", elapsed_time)
 
 
 def get_handles_country(cursor):
@@ -278,48 +232,6 @@ def _url_mapper(row, result_dict, result_key):
     }
 
 
-_default_handle_metrics = {'nb_hits': 0, 'nb_visits': 0, 'nb_uniq_pageviews': 0, 'nb_uniq_visitors': 0}
-
-
-def _handle_mapper(row, handle):
-    # sum of all under handle n-y-m-d doesn't matter -> views.total.nb_hits/visits -> year
-    # sum of all under handle in a year n-m-d doesn't matter -> views.total["2018"].nb_hits -> year
-    # sum of all under handle in a year-month n-d doesn't matter -> views.total["2018"]["3"].nb_hits -> month
-    # sum of all under handle in a year-month-day name doesn't matter ->views.total["2018"]["3"]["27"].nb_hits -> day
-    # sum of all under handle, year and name, m-d doesn't matter ->views["2018"].`name`.nb_hits -> year
-    # sum of all under handle, year, month and name, d doesn't matter ->views["2018"]["3"].`name`.nb_hits -> month
-    # sum of all under handle, year, month, day and name ->views["2018"]["3"]["27"].`name`.nb_hits -> day
-    y = row['year']
-    m = row['month']
-    d = row['day']
-    n = row['name']
-    hits = row['hits']
-    visits = row['visits']
-    uniq_pageviews = row['uniq_pageviews']
-    visitors = row['visitors']
-    for x in [
-        # year
-        handle.setdefault('year', {}).setdefault('total', _default_handle_metrics.copy()),
-        handle['year']['total'].setdefault(y, _default_handle_metrics.copy()),
-        handle['year'].setdefault(y, {}).setdefault(n, _default_handle_metrics.copy()),
-
-        # month
-        handle.setdefault('month', {}).setdefault('total', {}).setdefault(y, {})
-            .setdefault(m, _default_handle_metrics.copy()),
-        handle['month'].setdefault(y, {}).setdefault(m, {}).setdefault(n, _default_handle_metrics.copy()),
-
-        # day
-        handle.setdefault('day', {}).setdefault('total', {}).setdefault(y, {})
-            .setdefault(m, {}).setdefault(d, _default_handle_metrics.copy()),
-        handle['day'].setdefault(y, {}).setdefault(m, {}).setdefault(d, {})
-            .setdefault(n, _default_handle_metrics.copy())
-    ]:
-        x['nb_hits'] += hits
-        x['nb_visits'] += visits
-        x['nb_uniq_visitors'] += visitors
-        x['nb_uniq_pageviews'] += uniq_pageviews
-
-
 _stats_kind2mapper = {
     'views': _views_mapper,
     'visits': _visits_mapper,
@@ -385,6 +297,123 @@ def _country_lookup(code):
     return ret
 
 
+def _count_distinct(column):
+    return len(np.unique(column))
+
+
+aggregates = {
+    'hits': pd.NamedAgg("idaction", "count"),
+    'visits': pd.NamedAgg("idvisit", _count_distinct),
+    'uniq_pageviews': pd.NamedAgg("visit_action", _count_distinct),
+    'visitors': pd.NamedAgg("idvisitor", _count_distinct)
+}
+
+
+def _sensible_handle_filter(row):
+    if not row['handle']:
+        return False
+    try:
+        hdl_prefix, hdl_suffix = row['handle'].split('/', 1)
+        m = handle_pattern.match(row['name'])
+        if m:
+            extracted_hdl_prefix, extracted_hdl_suffix = m.groups()
+            if not (hdl_prefix == extracted_hdl_prefix and hdl_suffix == extracted_hdl_suffix):
+                log.debug("Skipping row handle='%s'; name='%s'", row['handle'], row['name'])
+                return False
+        else:
+            log.debug("Skipping, row['name'] not matching pattern '%s'", row['name'])
+            return False
+        validate_filename(hdl_prefix)
+        validate_filename(hdl_suffix)
+    except Exception as e:
+        log.debug("Skipping (invalid filename) handle='%s'\nname='%s'", row['handle'], row['name'])
+        return False
+    return True
+
+
+def _write_handle_result(result, resolution):
+    for hdl in result.keys():
+        report = result[hdl]
+        hdl_prefix, hdl_suffix = hdl.split('/', 1)
+        prefix = os.path.join('handle', hdl_prefix, hdl_suffix)
+        views = report.get('views', {})
+        downloads = report.get('downloads', {})
+        if resolution != 'year':
+            years = set(views.keys()).union(downloads.keys())
+            years.discard('total')
+            for year in years:
+                if resolution == 'day':
+                    months = set(views.get(year, {}).keys()).union(downloads.get(year, {}).keys())
+                    for month in months:
+                        v = {
+                            year: {
+                                month: views.setdefault(year, {}).setdefault(month, {})
+                            },
+                            'total': {
+                                year: {
+                                    month: views.setdefault('total', {}).setdefault(year, {}).setdefault(month, {})
+                                }
+                            }
+                        }
+                        d = {
+                            year: {
+                                month: downloads.setdefault(year, {}).setdefault(month, {})
+                            },
+                            'total': {
+                                year: {
+                                    month: downloads.setdefault('total', {}).setdefault(year, {}).setdefault(month, {})
+                                }
+                            }
+                        }
+                        p = os.path.join(output_dir, prefix, str(year), str(month))
+                        _write_response(p, v, d)
+                else:
+                    v = {
+                        year: views.setdefault(year, {}),
+                        'total': {
+                            year: views.setdefault('total', {}).setdefault(year, {}),
+                        }
+                    }
+                    d = {
+                        year: downloads.setdefault(year, {}),
+                        'total': {
+                            year: downloads.setdefault('total', {}).setdefault(year, {}),
+                        }
+                    }
+                    p = os.path.join(output_dir, prefix, str(year))
+                    _write_response(p, v, d)
+        else:
+            p = os.path.join(output_dir, prefix)
+            _write_response(p, views, downloads)
+
+
+def _write_response(path, views, downloads):
+    os.makedirs(path, exist_ok=True)
+    with open(os.path.join(path, 'response.json'), 'w') as f:
+        json.dump({
+            'response': {
+                'views': views,
+                'downloads': downloads
+            }
+        }, f)
+
+
+def _handles_mapper(result_dict, row, keys):
+    hits = row.hits
+    visits = row.visits
+    uniq_pageviews = row.uniq_pageviews
+    visitors = row.visitors
+    d = result_dict
+    for key in keys:
+        if key in row:
+            key = row[key]
+        d = d.setdefault(key, {})
+    d['nb_hits'] = hits
+    d['nb_visits'] = visits
+    d['nb_uniq_visitors'] = visitors
+    d['nb_uniq_pageviews'] = uniq_pageviews
+
+
 def main():
     log.debug("Debug logging is enabled")
     try:
@@ -397,7 +426,7 @@ def main():
         get_country(cursor)
         get_urls(cursor)
         # These are for repository
-        get_handles(cursor)
+        get_handles(db)
         get_handles_country(cursor)
         elapsed_time = time.perf_counter() - start_time
         log.info("Elapsed time fetching all: %s", elapsed_time)
