@@ -1,4 +1,4 @@
-mysql-connector-python
-pathvalidate
-pycountry
-pandas
+mysql-connector-python==8.0.27
+pathvalidate==2.5.0
+pycountry==22.1.10
+pandas==1.3.5
