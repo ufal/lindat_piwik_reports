@@ -86,7 +86,6 @@ def get_urls(cursor):
 
 def get_handles(db):
     start_time = time.perf_counter()
-    result = {}
     stats_kinds = ['views', 'downloads']
     data = {}
     for what in stats_kinds:
@@ -101,55 +100,41 @@ def get_handles(db):
         log.info("Elapsed time in handles filtering %s: %s", what, filter_elapsed)
         data[what] = df
 
+    result = {}
     # with day resolution
     for what in stats_kinds:
         df = data[what]
-        df.groupby(["handle", "name", "year", "month", "day"]) \
-            .agg(**aggregates).reset_index().apply(
-            lambda row: _handles_mapper(result, row, ['handle', what, 'year', 'month', 'day', 'name']),
-            axis=1
-        )
-        df.groupby(["handle", "year", "month", "day"]) \
-            .agg(**aggregates).reset_index().apply(
-            lambda row: _handles_mapper(result, row, ['handle', what, 'total', 'year', 'month', 'day']),
-            axis=1
-        )
+        gb_start = time.perf_counter()
+        for row in df.groupby(["handle", "name", "year", "month", "day"]).agg(**aggregates).reset_index().to_dict('records'):
+            _handles_mapper(result, row, ['handle', what, 'year', 'month', 'day', 'name'])
+        gb1_elapsed = time.perf_counter() - gb_start
+        log.info("Elapsed time in handles day group by1 %s: %s", what, gb1_elapsed)
+        for row in df.groupby(["handle", "year", "month", "day"]).agg(**aggregates).reset_index().to_dict('records'):
+            _handles_mapper(result, row, ['handle', what, 'total', 'year', 'month', 'day'])
+        gb_elapsed = time.perf_counter() - gb_start
+        log.info("Elapsed time in handles day group by %s: %s", what, gb_elapsed)
+
     _write_handle_result(result, 'day')
     result = {}
     # with month resolution
     for what in stats_kinds:
         df = data[what]
-        df.groupby(["handle", "name", "year", "month"]) \
-            .agg(**aggregates).reset_index().apply(
-            lambda row: _handles_mapper(result, row, ['handle', what, 'year', 'month', 'name']),
-            axis=1
-        )
-        df.groupby(["handle", "year", "month"]) \
-            .agg(**aggregates).reset_index().apply(
-            lambda row: _handles_mapper(result, row, ['handle', what, 'total', 'year', 'month']),
-            axis=1
-        )
+        for row in df.groupby(["handle", "name", "year", "month"]).agg(**aggregates).reset_index().to_dict('records'):
+            _handles_mapper(result, row, ['handle', what, 'year', 'month', 'name'])
+        for row in df.groupby(["handle", "year", "month"]).agg(**aggregates).reset_index().to_dict('records'):
+            _handles_mapper(result, row, ['handle', what, 'total', 'year', 'month'])
     _write_handle_result(result, 'month')
     result = {}
     # with year resolution
     for what in stats_kinds:
         df = data[what]
-        df.groupby(["handle", "name", "year"]) \
-            .agg(**aggregates).reset_index().apply(
-            lambda row: _handles_mapper(result, row, ['handle', what, 'year', 'name']),
-            axis=1
-        )
-        df.groupby(["handle", "year"]) \
-            .agg(**aggregates).reset_index().apply(
-            lambda row: _handles_mapper(result, row, ['handle', what, 'total', 'year']),
-            axis=1
-        )
+        for row in df.groupby(["handle", "name", "year"]).agg(**aggregates).reset_index().to_dict('records'):
+            _handles_mapper(result, row, ['handle', what, 'year', 'name'])
+        for row in df.groupby(["handle", "year"]).agg(**aggregates).reset_index().to_dict('records'):
+            _handles_mapper(result, row, ['handle', what, 'total', 'year'])
         # grand total
-        df.groupby(["handle"]) \
-            .agg(**aggregates).reset_index().apply(
-            lambda row: _handles_mapper(result, row, ['handle', what, 'total']),
-            axis=1
-        )
+        for row in df.groupby(["handle"]).agg(**aggregates).reset_index().to_dict('records'):
+            _handles_mapper(result, row, ['handle', what, 'total'])
     _write_handle_result(result, 'year')
     elapsed_time = time.perf_counter() - start_time
     log.info("Elapsed time in handles: %s", elapsed_time)
@@ -416,10 +401,10 @@ def _write_response(path, views, downloads):
 
 
 def _handles_mapper(result_dict, row, keys):
-    hits = row.hits
-    visits = row.visits
-    uniq_pageviews = row.uniq_pageviews
-    visitors = row.visitors
+    hits = row['hits']
+    visits = row['visits']
+    uniq_pageviews = row['uniq_pageviews']
+    visitors = row['visitors']
     d = result_dict
     for key in keys:
         if key in row:
