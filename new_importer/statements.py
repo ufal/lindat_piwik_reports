@@ -151,7 +151,7 @@ SELECT substring_index(substring_index(if(substring(name, locate('handle', name)
     FROM piwik_log_visit v
     LEFT JOIN piwik_log_link_visit_action ON v.idvisit = piwik_log_link_visit_action.idvisit
     LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
-            WHERE server_time >= '2014-01-01' and v.idsite=2 and name like '%/handle/%/%'
+            WHERE server_time >= '2014-01-01' and v.idsite=2 and name like 'lindat.%cz/repository/%handle/%/%'
                         GROUP BY handle, location_country, year, month
             ORDER BY handle, year, month, visits desc
 ) data ) data_numbered where row_number < 10                       
