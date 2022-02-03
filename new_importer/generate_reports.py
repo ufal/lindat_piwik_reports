@@ -3,11 +3,11 @@ import json
 import logging as log
 import os
 import re
+import string
 import time
 
 import mysql.connector
 import numpy as np
-from pathvalidate import ValidationError, validate_filename
 import pandas as pd
 import pycountry
 
@@ -19,6 +19,8 @@ log.basicConfig(level=getattr(log, lvl.upper(), None))
 
 segments = ['overall', 'downloads', 'repository', 'others', 'services', 'lrt', 'lrt-downloads']
 handle_pattern = re.compile('.*handle/([-\w+.]+)/([-\w+.]+)/?.*', re.ASCII)
+# basically url unreserved, ~ is removed, +/ are added
+allowed_chars = set(string.ascii_letters).union(set(string.digits)).union(set('-._+/'))
 
 
 def _fetch_and_write(cursor, stats_kind):
@@ -168,17 +170,19 @@ def get_handles_country(cursor):
                     'nb_visits': row['visits']
                 })
     for hdl, d in handles_country_report.items():
-        hdl_prefix, hdl_suffix = hdl.split('/', 1)
         # Expects this is run after get_handles and dirs are created; if not skip
         for date, countries in d.items():
-            output_prefix = os.path.join(output_dir, 'handle', hdl_prefix, hdl_suffix, date)
-            if not os.path.isdir(output_prefix):
-                log.debug("Skipping writing of '%s'; '%s' is not a dir", hdl, output_prefix)
-                continue
             try:
-                validate_filename(hdl_prefix)
-                validate_filename(hdl_suffix)
-            except ValidationError as e:
+                if not _valid_chars_in_handle(hdl):
+                    log.debug("Skipping writing of '%s'; has invalid chars", hdl)
+                    continue
+
+                hdl_prefix, hdl_suffix = hdl.split('/')
+                output_prefix = os.path.join(output_dir, 'handle', hdl_prefix, hdl_suffix, date)
+                if not os.path.isdir(output_prefix):
+                    log.debug("Skipping writing of '%s'; '%s' is not a dir", hdl, output_prefix)
+                    continue
+            except Exception as e:
                 log.error("%s", e)
                 log.debug("Skipping writing of '%s'", hdl)
                 continue
@@ -309,11 +313,26 @@ aggregates = {
 }
 
 
-def _sensible_handle_filter(handle, name):
+def _valid_chars_in_handle(handle):
     if not handle:
         return False
+    # set of letters in handle minus allowed chars, if anything left -> invalid
+    if set(handle).difference(allowed_chars):
+        return False
+    if len(handle) -1 > (2*255):
+        return False
+    return True
+
+
+def _sensible_handle_filter(handle, name):
+    if not _valid_chars_in_handle(handle):
+        log.debug("Skipping '%s'; has invalid chars", handle)
+        return False
     try:
-        hdl_prefix, hdl_suffix = handle.split('/', 1)
+        # this throws an exception if there are more parts
+        hdl_prefix, hdl_suffix = handle.split('/')
+        if hdl_prefix[-1] == '.' or hdl_suffix[-1] == '.':
+            return False
         m = handle_pattern.match(name)
         if m:
             extracted_hdl_prefix, extracted_hdl_suffix = m.groups()
@@ -323,8 +342,6 @@ def _sensible_handle_filter(handle, name):
         else:
             log.debug("Skipping, name not matching pattern '%s'", name)
             return False
-        validate_filename(hdl_prefix)
-        validate_filename(hdl_suffix)
     except Exception as e:
         log.debug("Skipping (invalid filename) handle='%s'\nname='%s'", handle, name)
         return False
