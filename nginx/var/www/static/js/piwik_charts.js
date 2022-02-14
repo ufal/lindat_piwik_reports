@@ -69,6 +69,15 @@ jQuery(document).ready(function (){
 
 
 loadData = function(what, date, period, segment) {
+    // XXX Bit of a hack to do this here; but it's a single place where it can be done
+    // Only the "page views over time" are displayed day by day; the others are aggregates for the given month, it
+    // should be enough to take one month from the json with month resolution (period)
+    // For now this handles only the urls
+    if(what === "urls" && period === "day"){
+        period = "month";
+        date = date.split("-")[0];
+    }
+    // /hack
     if(date != null) {
         params = "?date=" + date + "&period=" + period;
     } else {
