@@ -2,79 +2,50 @@
 
 A python application to periodically retrieve the PIWIK counts and store them locally in lucene index for generation of quick custom dspace statistics reports.
 
-## Requirments
-### PyLucene (http://lucene.apache.org/pylucene/)
-Follow the installation instruction on the apache website. JCC is also required for PyLucene.
+## Requirements
+access to piwik mysql database
 
-### Gunicorn
-To run the python application as a webservice.
 
 ## Setup
 Clone the git project.
 ```
-git clone https://github.com/ufal/custom_piwik_reports.git [PATH]
+git clone --recurse-submodules https://github.com/ufal/custom_piwik_reports.git [PATH]
 ```
 
-open the [PATH]/scripts/search_application.py and change the value of the index variable to the folder where indexes will be created.
+install python requirements
 ```
-index = [INDEXES_PATH]
-```
-
-Create an init.d startup script to run application and bind with a unix socket. Use the following settings.
+pip install -r new_importer/requirements.txt
 
 ```
-#!/bin/sh
-### BEGIN INIT INFO
-# Provides:          statistics
-# Required-Start:
-# Required-Stop:
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: statistics
-# Description:       statistics
-### END INIT INFO
 
-
-DAEMON_PATH="[PATH]/scripts/"
-
-DAEMON=gunicorn
-DAEMONOPTS="--log-level=debug --timeout 90 --workers 3 --bind unix:statistics.sock --user www-data --group devs --umask 007 wsgi"
-
-NAME=statistics
-DESC="Gunicorn statistics server for local piwik statistics"
-PIDFILE=/var/run/$NAME.pid
-SCRIPTNAME=/etc/init.d/$NAME
-LOG_DIR=/var/log/statistics
-mkdir -p $LOG_DIR
-stdout_log="$LOG_DIR/$NAME.log"
-stderr_log="$LOG_DIR/$NAME.err"
+create `new_importer/config.py`:
 ```
-We can now use the service command to start/stop the statistics gunicorn server.
-```
-sudo service statistics start
-```
-
-Create a proxy in nginx.
-
-```
-location /statistics {
-        rewrite /statistics(.+) /$1 break;
-        include proxy_params;
-        proxy_pass http://unix:[PATH]/scripts/statistics.sock;
-        proxy_connect_timeout 300s;
-        proxy_read_timeout 300s;
+db_config = {
+    'host': 'localhost',
+    'user': 'reports',
+    'password': '',
+    'database': 'piwik_db'
 }
+
+output_dir = '/tmp/new_reports/'
 ```
-Restart nginx and the service is now accessible https://localhost/statistics/
+
+`output_dir` should be set according to `nginx.conf`
+
+see the `nginx/conf/nginx.conf` or run
+```
+docker run -v "$(pwd)"/nginx/conf/nginx.conf:/etc/nginx/nginx.conf:ro -v "$(pwd)"/nginx/var/www:/var/www -d -p 8080:80 --name lindat_stats nginx
+```
+Which expect the output_dir to be `nginx/var/www/statistics/`
+
 
 ## Initializing the reports
 To retrive all the data from PIWIK server use the following command:
 ```
-sudo make SCRIPT_PATH=[PATH]/scripts/generate_piwik_reports.py INDEX=[INDEXES_PATH]
-              AUTH_TOKEN=[PIWIK_AUTH_TOKEN] START_DATE=YYYY-MM-DD END_DATE=YYY-MM-DD all
+python new_importer/generate_reports.py
 ```
 
-Create a cron job to periodically retrive the statistics. Set the START and END DATE occordingly.
+Create a cron job to periodically retrive the statistics. *currently no update* implemented; full import takes aprox 20 min.
 
 ## API
 
@@ -113,6 +84,7 @@ nb_hits is equivalent to nb_pageviews
 
 ### /statistics/handle?h=[handle]
 Return the views for specific handle.
+with `country=true` return the top 10 countries
 
 
 ## API Params
@@ -148,3 +120,12 @@ Not providing segment will return the overall counts combining all.
 Use the joomla.html file to create an article with piwik_charts.js javascript.
 
 jqplot is required to generate the charts.
+
+Add the dependencies mentioned in https://github.com/ufal/piwik-charts#how-to-use (js, css) and also:
+```html
+<link href="js/lib/jquery-jvectormap-2.0.3.css" rel="stylesheet" type="text/css" />
+<script src="js/lib/jquery-jvectormap-2.0.3.min.js" type="text/javascript"></script>
+<script src="js/lib/jquery-jvectormap-world-mill.js" type="text/javascript"></script>
+<script src="piwik-charts/lib/jqplot/plugins/jqplot.categoryAxisRenderer.min.js" type="text/javascript"> </script>
+<script src="piwik-charts/lib/jqplot/plugins/jqplot.pointLabels.min.js" type="text/javascript"> </script>
+```
