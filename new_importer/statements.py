@@ -55,14 +55,14 @@ SELECT location_country, count(distinct v.idvisit) as visits, count( DISTINCT v.
 # the next one numbers the rows for given year-month combination
 # the outer most selects the top N rows for the year-month combination
 top_urls_by_month = """
-set @row_number = 0;
+set @my_row_number = 0;
 set @last_date = '';
-SELECT hits, visits, year, month, name, row_number FROM (
+SELECT hits, visits, year, month, name, my_row_number FROM (
 SELECT hits, visits, year, month, name,
-    @row_number:=CASE
-        WHEN @last_date = concat(year, '-', month) then @row_number + 1
+    @my_row_number:=CASE
+        WHEN @last_date = concat(year, '-', month) then @my_row_number + 1
         ELSE 0
-    END as row_number,
+    END as my_row_number,
     @last_date:=concat(year, '-', month) FROM (
 SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, idsite, YEAR(server_time) as year, MONTH(server_time) as month, substring_index(name, '?', 1) as name
     FROM piwik_log_link_visit_action v
@@ -72,18 +72,18 @@ SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, idsite, Y
     {}
     GROUP BY year, month, substring_index(name, '?', 1)
     order by year, month, hits desc
- ) data ) data_numbered where row_number < 100;
+ ) data ) data_numbered where my_row_number < 100;
 """
 
 top_urls_by_year = """
-set @row_number = 0;
+set @my_row_number = 0;
 set @last_date = '';
-SELECT hits, visits, year, name, row_number FROM (
+SELECT hits, visits, year, name, my_row_number FROM (
 SELECT hits, visits, year, name,
-    @row_number:=CASE
-        WHEN @last_date = year then @row_number + 1
+    @my_row_number:=CASE
+        WHEN @last_date = year then @my_row_number + 1
         ELSE 0
-    END as row_number,
+    END as my_row_number,
     @last_date:=year FROM (
 SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(server_time) as year, substring_index(name, '?', 1) as name
     FROM piwik_log_link_visit_action v
@@ -93,7 +93,7 @@ SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(serv
     {}
     GROUP BY year, substring_index(name, '?', 1)
     order by year, hits desc
- ) data ) data_numbered where row_number < 100;
+ ) data ) data_numbered where my_row_number < 100;
 """
 
 top_urls_total = """
@@ -133,15 +133,15 @@ SELECT if(substring(name, locate('handle', name) + 7) like '%/%/%',
 """
 
 handles_country = """
-set @row_number=0;
+set @my_row_number=0;
 set @last_group = '';
-SELECT handle, location_country, visits, year, month, row_number FROM
+SELECT handle, location_country, visits, year, month, my_row_number FROM
 (
 SELECT handle, location_country, visits, year, month,     
-    @row_number:=CASE
-    WHEN @last_group = CONCAT(handle, '/', year, '-', month) THEN @row_number + 1
+    @my_row_number:=CASE
+    WHEN @last_group = CONCAT(handle, '/', year, '-', month) THEN @my_row_number + 1
     ELSE 0
-    END as row_number,
+    END as my_row_number,
     @last_group:=CONCAT(handle, '/', year, '-', month) FROM
 (
 SELECT substring_index(substring_index(if(substring(name, locate('handle', name) + 7) like '%/%/%',
@@ -154,7 +154,7 @@ SELECT substring_index(substring_index(if(substring(name, locate('handle', name)
             WHERE server_time >= '2014-01-01' and v.idsite=2 and name like 'lindat.%cz/repository/%handle/%/%'
                         GROUP BY handle, location_country, year, month
             ORDER BY handle, year, month, visits desc
-) data ) data_numbered where row_number < 10                       
+) data ) data_numbered where my_row_number < 10                       
     ;
 """
 
