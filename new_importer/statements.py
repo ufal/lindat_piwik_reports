@@ -64,7 +64,7 @@ SELECT hits, visits, year, month, name,
         ELSE 0
     END as my_row_number,
     @last_date:=concat(year, '-', month) FROM (
-SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, idsite, YEAR(server_time) as year, MONTH(server_time) as month, substring_index(name, '?', 1) as name
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(server_time) as year, MONTH(server_time) as month, substring_index(name, '?', 1) as name
     FROM piwik_log_link_visit_action v
     LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
     WHERE type = 1
