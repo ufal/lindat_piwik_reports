@@ -281,6 +281,8 @@ def _country_lookup(code):
         ret = 'satellite provider'
     elif code == 'XX':
         ret = 'Unknown'
+    elif code == 'XK':
+        ret = 'Kosovo'
     else:
         ret = pycountry.countries.lookup(code).name
     return ret
