@@ -1,3 +1,5 @@
+from config import NFA_RANGE, MFF_RANGE
+
 # The ROLLUP creates (sub)totals based on the grouping columns; these will have NULL in that column; eg. if year,
 # month, day and idsite are NULL this is the grand total across all ymd and sites
 # The queries can be filtered to only return the (sub)totals using:
@@ -183,19 +185,19 @@ segment2where = {
     'lrt-downloads': """
         AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%LRT%'
     """,
-    'mff-repository-internal-views': """
+    'mff-repository-internal-views': f"""
         AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT name 
         like '%handle/20.500.12801%' AND {MFF_RANGE}
     """,
-    'mff-repository-internal-downloads': """
+    'mff-repository-internal-downloads': f"""
         AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT name 
         like '%handle/20.500.12801%' AND {MFF_RANGE}
     """,
-    'mff-repository-external-downloads': """
+    'mff-repository-external-downloads': f"""
         AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT name 
         like '%handle/20.500.12801%' AND NOT {MFF_RANGE}
     """,
-    'mff-repository-external-views': """
+    'mff-repository-external-views': f"""
         AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT name 
         like '%handle/20.500.12801%' AND NOT {MFF_RANGE}
     """,
