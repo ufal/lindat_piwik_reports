@@ -17,7 +17,8 @@ from statements import statements, segment2where
 lvl = os.environ.get('LOG_LEVEL', 'INFO')
 log.basicConfig(level=getattr(log, lvl.upper(), None))
 
-segments = ['overall', 'downloads', 'repository', 'others', 'services', 'lrt', 'lrt-downloads']
+#segments = ['mff-repository-internal-views', 'mff-repository-internal-downloads', 'mff-repository-external-downloads', 'mff-repository-external-views', 'nfa-repository-internal-views', 'nfa-repository-internal-downloads', 'nfa-repository-external-downloads', 'nfa-repository-external-views']
+segments = segment2where.keys() - ['handle-views', 'handle-downloads']
 handle_pattern = re.compile('.*handle/([-\w+.]+)/([-\w+.]+)/?.*', re.ASCII)
 # basically url unreserved, ~ is removed, +/ are added
 allowed_chars = set(string.ascii_letters).union(set(string.digits)).union(set('-._+/'))

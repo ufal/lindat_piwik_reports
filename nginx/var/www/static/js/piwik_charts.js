@@ -26,8 +26,8 @@ jQuery(document).ready(function (){
 
 	$.jqplot.config.enablePlugins = true;
 
-    already_loaded_dates = {"overall":{}, "repository":{}, "downloads":{}, "lrt":{}, "lrt-downloads":{}, "services":{}, "others":{}};
-    loaded_data = {"overall":{}, "repository":{}, "downloads":{}, "lrt":{}, "lrt-downloads":{}, "services":{}, "others":{}};
+    already_loaded_dates = {"overall":{}, "repository":{}, "downloads":{}, "lrt":{}, "lrt-downloads":{}, "services":{}, "others":{}, "mff-repository-internal-views":{}, "mff-repository-internal-downloads":{}, "mff-repository-external-views":{}, "mff-repository-external-downloads":{}, "nfa-repository-internal-views":{}, "nfa-repository-internal-downloads":{}, "nfa-repository-external-views":{}, "nfa-repository-external-downloads":{}};
+    loaded_data = {"overall":{}, "repository":{}, "downloads":{}, "lrt":{}, "lrt-downloads":{}, "services":{}, "others":{}, "mff-repository-internal-views":{}, "mff-repository-internal-downloads":{}, "mff-repository-external-views":{}, "mff-repository-external-downloads":{}, "nfa-repository-internal-views":{}, "nfa-repository-internal-downloads":{}, "nfa-repository-external-views":{}, "nfa-repository-external-downloads":{}};
 
 	$.when(
 	    loadData("views",   null, "year", "overall"),
@@ -126,7 +126,15 @@ showTab = function(target) {
     } else if(target == "#others") {
         othersTab();
     } else if(target == "#lrt") {
-        lrtTab();
+        lrtTab("lrt", "lrt-downloads", "lrt");
+    } else if(target == "#mff-internal") {
+        lrtTab("mff-repository-internal-views", "mff-repository-internal-downloads", "mff-internal");
+    } else if(target == "#mff-external") {
+        lrtTab("mff-repository-external-views", "mff-repository-external-downloads", "mff-external");
+    } else if(target == "#nfa-internal") {
+        lrtTab("nfa-repository-internal-views", "nfa-repository-internal-downloads", "nfa-internal");
+    } else if(target == "#nfa-external") {
+        lrtTab("nfa-repository-external-views", "nfa-repository-external-downloads", "nfa-external");
     } else {
         $("#loading").css("display", "none");
     }
@@ -250,82 +258,83 @@ repositoryTab = function() {
 	});
 }
 
-lrtTab = function() {
+lrtTab = function(v_segment_name, d_segment_name, output_div_id) {
+    // v for views site; d for downloads site
 
 	$.when(
-	    loadData("views", current_date, current_view, "lrt"),
-        loadData("visits", current_date, current_view, "lrt"),
-        loadData("country", current_date, current_view, "lrt"),
-        loadData("urls", current_date, current_view, "lrt"),
-	    loadData("views", current_date, current_view, "lrt-downloads"),
-        loadData("visits", current_date, current_view, "lrt-downloads"),
-        loadData("country", current_date, current_view, "lrt-downloads"),
-        loadData("urls", current_date, current_view, "lrt-downloads")
+	    loadData("views", current_date, current_view, v_segment_name),
+        loadData("visits", current_date, current_view, v_segment_name),
+        loadData("country", current_date, current_view, v_segment_name),
+        loadData("urls", current_date, current_view, v_segment_name),
+	    loadData("views", current_date, current_view, d_segment_name),
+        loadData("visits", current_date, current_view, d_segment_name),
+        loadData("country", current_date, current_view, d_segment_name),
+        loadData("urls", current_date, current_view, d_segment_name)
     ).then(function() {
 
-        var overall_views = loaded_data["lrt"]["views"];
+        var overall_views = loaded_data[v_segment_name]["views"];
         var total_views = overall_views["total"]["nb_pageviews"];
         var total_uniq_views= overall_views["total"]["nb_uniq_pageviews"];
-        var overall_visits = loaded_data["lrt"]["visits"];
-        var overall_country = loaded_data["lrt"]["country"]["total"];
-        var overall_urls = loaded_data["lrt"]["urls"]["total"];
+        var overall_visits = loaded_data[v_segment_name]["visits"];
+        var overall_country = loaded_data[v_segment_name]["country"]["total"];
+        var overall_urls = loaded_data[v_segment_name]["urls"]["total"];
 
-        var download_views = loaded_data["lrt-downloads"]["views"];
+        var download_views = loaded_data[d_segment_name]["views"];
         var total_downloads = download_views["total"]["nb_pageviews"];
         var total_uniq_downloads= download_views["total"]["nb_uniq_pageviews"];
-        var download_visits = loaded_data["lrt-downloads"]["visits"];
-        var download_country = loaded_data["lrt-downloads"]["country"]["total"];
-        var download_urls = loaded_data["lrt-downloads"]["urls"]["total"];
+        var download_visits = loaded_data[d_segment_name]["visits"];
+        var download_country = loaded_data[d_segment_name]["country"]["total"];
+        var download_urls = loaded_data[d_segment_name]["urls"]["total"];
 
         var tf  = "%Y";
         var ti  = "1 year";
 
 
-        if($("#lrt").length) {
+        if($("#" + output_div_id).length) {
 
             if(current_view == "month") {
-                overall_views = loaded_data["lrt"]["views"][current_year];
+                overall_views = loaded_data[v_segment_name]["views"][current_year];
                 total_views = overall_views["nb_pageviews"];
                 total_uniq_views= overall_views["nb_uniq_pageviews"];
-                overall_visits = loaded_data["lrt"]["visits"][current_year];
-                overall_country = loaded_data["lrt"]["country"][current_year];
-                overall_urls = loaded_data["lrt"]["urls"][current_year];
+                overall_visits = loaded_data[v_segment_name]["visits"][current_year];
+                overall_country = loaded_data[v_segment_name]["country"][current_year];
+                overall_urls = loaded_data[v_segment_name]["urls"][current_year];
 
-                download_views = loaded_data["lrt-downloads"]["views"][current_year];
+                download_views = loaded_data[d_segment_name]["views"][current_year];
                 total_downloads = download_views["nb_pageviews"];
                 total_uniq_downloads= download_views["nb_uniq_pageviews"];
-                download_visits = loaded_data["lrt-downloads"]["visits"][current_year];
-                download_country = loaded_data["lrt-downloads"]["country"][current_year];
-                download_urls = loaded_data["lrt-downloads"]["urls"][current_year];
+                download_visits = loaded_data[d_segment_name]["visits"][current_year];
+                download_country = loaded_data[d_segment_name]["country"][current_year];
+                download_urls = loaded_data[d_segment_name]["urls"][current_year];
 
                 tf = "%b";
                 ti = "1 month";
             }else
             if(current_view == "day") {
-                overall_views = loaded_data["lrt"]["views"][current_year][current_month];
+                overall_views = loaded_data[v_segment_name]["views"][current_year][current_month];
                 total_views = overall_views["nb_pageviews"];
                 total_uniq_views= overall_views["nb_uniq_pageviews"];
-                overall_visits = loaded_data["lrt"]["visits"][current_year][current_month];
-                overall_country = loaded_data["lrt"]["country"][current_year][current_month];
-                overall_urls = loaded_data["lrt"]["urls"][current_year][current_month];
+                overall_visits = loaded_data[v_segment_name]["visits"][current_year][current_month];
+                overall_country = loaded_data[v_segment_name]["country"][current_year][current_month];
+                overall_urls = loaded_data[v_segment_name]["urls"][current_year][current_month];
 
-                download_views = loaded_data["lrt-downloads"]["views"][current_year][current_month];
+                download_views = loaded_data[d_segment_name]["views"][current_year][current_month];
                 total_downloads = download_views["nb_pageviews"];
                 total_uniq_downloads= download_views["nb_uniq_pageviews"];
-                download_visits = loaded_data["lrt-downloads"]["visits"][current_year][current_month];
-                download_country = loaded_data["lrt-downloads"]["country"][current_year][current_month];
-                download_urls = loaded_data["lrt-downloads"]["urls"][current_year][current_month];
+                download_visits = loaded_data[d_segment_name]["visits"][current_year][current_month];
+                download_country = loaded_data[d_segment_name]["country"][current_year][current_month];
+                download_urls = loaded_data[d_segment_name]["urls"][current_year][current_month];
 
                 tf = "%d";
                 ti = "1 day";
             }
 
-            plotViews("lrt_views_chart", overall_views, "#7e35a5", tf, ti, "<div style='font-size: 110%; padding: 5px; color: #FFFFFF;'>%s<BR/><strong style='font-size: 14px;'>%s</strong> Views</div>");
-            plotViews("lrt_downloads_chart", download_views, "#004563", tf, ti, "<div style='font-size: 110%; padding: 5px; color: #FFFFFF;'>%s<BR/><strong style='font-size: 14px;'>%s</strong> Downloads</div>");
-            showMetrics("lrt_visits_count", overall_views, overall_visits, download_views, download_visits);
-            plotMap("lrt_visits_map", overall_country, "#004563");
-            showTopURLs("lrt_accessed_url", overall_urls, total_views, total_uniq_views);
-            showTopURLs("lrt_download_url", download_urls, total_downloads, total_uniq_downloads);
+            plotViews(output_div_id + "_views_chart", overall_views, "#7e35a5", tf, ti, "<div style='font-size: 110%; padding: 5px; color: #FFFFFF;'>%s<BR/><strong style='font-size: 14px;'>%s</strong> Views</div>");
+            plotViews(output_div_id + "_downloads_chart", download_views, "#004563", tf, ti, "<div style='font-size: 110%; padding: 5px; color: #FFFFFF;'>%s<BR/><strong style='font-size: 14px;'>%s</strong> Downloads</div>");
+            showMetrics(output_div_id + "_visits_count", overall_views, overall_visits, download_views, download_visits);
+            plotMap(output_div_id + "_visits_map", overall_country, "#004563");
+            showTopURLs(output_div_id + "_accessed_url", overall_urls, total_views, total_uniq_views);
+            showTopURLs(output_div_id + "_download_url", download_urls, total_downloads, total_uniq_downloads);
 
             $("#loading").css("display", "none");
         }

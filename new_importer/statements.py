@@ -6,12 +6,13 @@
 # (AND returns null if any of the operands is null)
 # ; but that doesn't seem to be faster than without the filtering
 hits_visits_aggregated = """
-SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as uniq_pageviews, idsite, YEAR(server_time) as year, 
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as uniq_pageviews, v.idsite, YEAR(server_time) as year, 
 MONTH(server_time) as month, DAY(server_time) as day
     FROM piwik_log_link_visit_action v
+    LEFT JOIN piwik_log_visit USING(idvisit)
         LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
             WHERE type = 1 AND server_time >= '2014-01-01' {}
-                        GROUP BY year, month, day, idsite WITH ROLLUP;
+                        GROUP BY year, month, day, v.idsite WITH ROLLUP;
 """
 
 
@@ -66,6 +67,7 @@ SELECT hits, visits, year, month, name,
     @last_date:=concat(year, '-', month) FROM (
 SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(server_time) as year, MONTH(server_time) as month, substring_index(name, '?', 1) as name
     FROM piwik_log_link_visit_action v
+    LEFT JOIN piwik_log_visit USING(idvisit)
     LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
     WHERE type = 1
     AND server_time >= '2014-01-01'
@@ -87,6 +89,7 @@ SELECT hits, visits, year, name,
     @last_date:=year FROM (
 SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(server_time) as year, substring_index(name, '?', 1) as name
     FROM piwik_log_link_visit_action v
+    LEFT JOIN piwik_log_visit USING(idvisit)
     LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
     WHERE type = 1
     AND server_time >= '2014-01-01'
@@ -99,6 +102,7 @@ SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(serv
 top_urls_total = """
 SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, substring_index(name, '?', 1) as name
     FROM piwik_log_link_visit_action v
+    LEFT JOIN piwik_log_visit USING(idvisit)
     LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
     WHERE type = 1
     AND server_time >= '2014-01-01'
@@ -179,6 +183,38 @@ segment2where = {
     'lrt-downloads': """
         AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%LRT%'
     """,
+    'mff-repository-internal-views': """
+        AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT name 
+        like '%handle/20.500.12801%' AND {MFF_RANGE}
+    """,
+    'mff-repository-internal-downloads': """
+        AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT name 
+        like '%handle/20.500.12801%' AND {MFF_RANGE}
+    """,
+    'mff-repository-external-downloads': """
+        AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT name 
+        like '%handle/20.500.12801%' AND NOT {MFF_RANGE}
+    """,
+    'mff-repository-external-views': """
+        AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT name 
+        like '%handle/20.500.12801%' AND NOT {MFF_RANGE}
+    """,
+    'nfa-repository-internal-views': f"""
+        AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND name 
+        like '%handle/20.500.12801%' AND {NFA_RANGE}
+    """,
+    'nfa-repository-internal-downloads': f"""
+        AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND name 
+        like '%handle/20.500.12801%' AND {NFA_RANGE}
+    """,
+    'nfa-repository-external-downloads': f"""
+        AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND name 
+        like '%handle/20.500.12801%' AND NOT {NFA_RANGE}
+    """,
+    'nfa-repository-external-views': f"""
+        AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND name 
+        like '%handle/20.500.12801%' AND NOT {NFA_RANGE}
+    """,
     'handle-views': """
         AND v.idsite=2 AND name like 'lindat.%cz/repository/%handle/%/%'
     """,
@@ -197,3 +233,4 @@ statements = {
     'handles': handles,
     'handles_country': handles_country
 }
+

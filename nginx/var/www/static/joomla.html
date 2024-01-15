@@ -41,7 +41,15 @@
 	<li role="presentation"><a href="#downloads"
 		aria-controls="downloads" role="tab" data-toggle="tab">Repository (Downloads)</a></li>
 	<li role="presentation"><a href="#lrt"
-		aria-controls="lrt" role="tab" data-toggle="tab">LRT</a></li>		
+		aria-controls="lrt" role="tab" data-toggle="tab">LRT</a></li>
+	<li role="presentation"><a href="#mff-internal"
+							   aria-controls="mff-internal" role="tab" data-toggle="tab">MFF Internal</a></li>
+	<li role="presentation"><a href="#mff-external"
+							   aria-controls="mff-external" role="tab" data-toggle="tab">MFF External</a></li>
+	<li role="presentation"><a href="#nfa-internal"
+							   aria-controls="nfa-internal" role="tab" data-toggle="tab">NFA Internal</a></li>
+	<li role="presentation"><a href="#nfa-external"
+							   aria-controls="nfa-external" role="tab" data-toggle="tab">NFA External</a></li>
 	<li role="presentation"><a href="#services"
 		aria-controls="services" role="tab" data-toggle="tab">Services</a></li>
 	<li role="presentation"><a href="#others" aria-controls="others"
@@ -349,7 +357,381 @@
 				</div>									
 			</div>			
 		</div>			
-	</div>	
+	</div>
+
+
+	<div role="tabpanel" class="tab-pane" id="mff-internal">
+		<div class="alert alert-warning">
+			<strong>
+				This is a special report for MFF. The report is generated based on URL pattern and ip matching; it
+				includes visits from IP addresses belonging to MFF but excludes items in NFA community (based on url
+				matching handle prefix).
+			</strong>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Page Views Over Time</strong><span class="current_span pull-right"></span></div>
+					<div class="panel-body">
+						<div id="mff-internal_views_chart" style="width: 100%; height: 250px;">
+						</div>
+						<div class="alert alert-info"><i class="fa fa-info-circle"></i> <strong>Click on a data item to summarize by year / month.</strong></div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Important Metrics</strong></div>
+					<div class="panel-body">
+						<div id="mff-internal_visits_count"
+							 style="display: none; width: 100%; height: 215px; margin-top: 10px; padding: 10px;">
+							<table class="table table-striped"></table>
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on a metric name to show its definition.</strong></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Downloads Over Time</strong><span class="current_span pull-right"></span></div>
+					<div class="panel-body">
+						<div id="mff-internal_downloads_chart" style="width: 100%; height: 250px;">
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Country Wise Visits</strong></div>
+					<div class="panel-body">
+						<div id="mff-internal_visits_map"
+							 style="display: none; box-shadow: 3px 3px 1px #dadada; width: 100%; height: 215px; margin-top: 10px; border: 2px solid #999999">
+						</div>
+						<div id="mff-internal_visits_map_cz"
+							 style="display: none; background-color: #f7f7f7; padding: 10px; font-size: 110%; border: 2px solid #999999; box-shadow: 3px 3px 1px #dadada;">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Most Visited Items</strong> <span id="mff-internal_accessed_url_count"></span></div>
+					<div class="panel-body">
+						<div id="mff-internal_accessed_url"
+							 style="display: none; width: 100%;">
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on the values to see percentages.</strong></div>
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Most Downloaded Bitstreams</strong> <span id="mff-internal_download_url_count"></span></div>
+					<div class="panel-body">
+						<div id="mff-internal_download_url"
+							 style="display: none; width: 100%;">
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i>&nbsp;
+								<strong>Hover on the values to see percentages.</strong>
+								<br>
+								<strong>Clicking on a link will take you to the item page of the particular bitstream.</strong>
+							</div>
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div role="tabpanel" class="tab-pane" id="mff-external">
+		<div class="alert alert-warning">
+			<strong>
+				This is a special report for MFF. The report is generated based on URL pattern and ip matching; it
+				includes visits from IP addresses <b>not</b> belonging to MFF and excludes items in NFA community (based
+				on url matching handle prefix).
+			</strong>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Page Views Over Time</strong><span class="current_span pull-right"></span></div>
+					<div class="panel-body">
+						<div id="mff-external_views_chart" style="width: 100%; height: 250px;">
+						</div>
+						<div class="alert alert-info"><i class="fa fa-info-circle"></i> <strong>Click on a data item to summarize by year / month.</strong></div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Important Metrics</strong></div>
+					<div class="panel-body">
+						<div id="mff-external_visits_count"
+							 style="display: none; width: 100%; height: 215px; margin-top: 10px; padding: 10px;">
+							<table class="table table-striped"></table>
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on a metric name to show its definition.</strong></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Downloads Over Time</strong><span class="current_span pull-right"></span></div>
+					<div class="panel-body">
+						<div id="mff-external_downloads_chart" style="width: 100%; height: 250px;">
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Country Wise Visits</strong></div>
+					<div class="panel-body">
+						<div id="mff-external_visits_map"
+							 style="display: none; box-shadow: 3px 3px 1px #dadada; width: 100%; height: 215px; margin-top: 10px; border: 2px solid #999999">
+						</div>
+						<div id="mff-external_visits_map_cz"
+							 style="display: none; background-color: #f7f7f7; padding: 10px; font-size: 110%; border: 2px solid #999999; box-shadow: 3px 3px 1px #dadada;">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Most Visited Items</strong> <span id="mff-external_accessed_url_count"></span></div>
+					<div class="panel-body">
+						<div id="mff-external_accessed_url"
+							 style="display: none; width: 100%;">
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on the values to see percentages.</strong></div>
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Most Downloaded Bitstreams</strong> <span id="mff-external_download_url_count"></span></div>
+					<div class="panel-body">
+						<div id="mff-external_download_url"
+							 style="display: none; width: 100%;">
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i>&nbsp;
+								<strong>Hover on the values to see percentages.</strong>
+								<br>
+								<strong>Clicking on a link will take you to the item page of the particular bitstream.</strong>
+							</div>
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div role="tabpanel" class="tab-pane" id="nfa-internal">
+		<div class="alert alert-warning">
+			<strong>
+				This is a special report for NFA. The report is generated based on URL pattern and ip matching; it
+				includes visits from IP addresses  belonging to NFA and includes items in NFA community (based
+				on url matching handle prefix) only.
+			</strong>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Page Views Over Time</strong><span class="current_span pull-right"></span></div>
+					<div class="panel-body">
+						<div id="nfa-internal_views_chart" style="width: 100%; height: 250px;">
+						</div>
+						<div class="alert alert-info"><i class="fa fa-info-circle"></i> <strong>Click on a data item to summarize by year / month.</strong></div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Important Metrics</strong></div>
+					<div class="panel-body">
+						<div id="nfa-internal_visits_count"
+							 style="display: none; width: 100%; height: 215px; margin-top: 10px; padding: 10px;">
+							<table class="table table-striped"></table>
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on a metric name to show its definition.</strong></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Downloads Over Time</strong><span class="current_span pull-right"></span></div>
+					<div class="panel-body">
+						<div id="nfa-internal_downloads_chart" style="width: 100%; height: 250px;">
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Country Wise Visits</strong></div>
+					<div class="panel-body">
+						<div id="nfa-internal_visits_map"
+							 style="display: none; box-shadow: 3px 3px 1px #dadada; width: 100%; height: 215px; margin-top: 10px; border: 2px solid #999999">
+						</div>
+						<div id="nfa-internal_visits_map_cz"
+							 style="display: none; background-color: #f7f7f7; padding: 10px; font-size: 110%; border: 2px solid #999999; box-shadow: 3px 3px 1px #dadada;">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Most Visited Items</strong> <span id="nfa-internal_accessed_url_count"></span></div>
+					<div class="panel-body">
+						<div id="nfa-internal_accessed_url"
+							 style="display: none; width: 100%;">
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on the values to see percentages.</strong></div>
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Most Downloaded Bitstreams</strong> <span id="nfa-internal_download_url_count"></span></div>
+					<div class="panel-body">
+						<div id="nfa-internal_download_url"
+							 style="display: none; width: 100%;">
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i>&nbsp;
+								<strong>Hover on the values to see percentages.</strong>
+								<br>
+								<strong>Clicking on a link will take you to the item page of the particular bitstream.</strong>
+							</div>
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div role="tabpanel" class="tab-pane" id="nfa-external">
+		<div class="alert alert-warning">
+			<strong>
+				This is a special report for NFA. The report is generated based on URL pattern and ip matching; it
+				includes visits from IP addresses <b>not</b> belonging to NFA and includes items in NFA community (based
+				on url matching handle prefix) only.
+			</strong>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Page Views Over Time</strong><span class="current_span pull-right"></span></div>
+					<div class="panel-body">
+						<div id="nfa-external_views_chart" style="width: 100%; height: 250px;">
+						</div>
+						<div class="alert alert-info"><i class="fa fa-info-circle"></i> <strong>Click on a data item to summarize by year / month.</strong></div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Important Metrics</strong></div>
+					<div class="panel-body">
+						<div id="nfa-external_visits_count"
+							 style="display: none; width: 100%; height: 215px; margin-top: 10px; padding: 10px;">
+							<table class="table table-striped"></table>
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on a metric name to show its definition.</strong></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Downloads Over Time</strong><span class="current_span pull-right"></span></div>
+					<div class="panel-body">
+						<div id="nfa-external_downloads_chart" style="width: 100%; height: 250px;">
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Country Wise Visits</strong></div>
+					<div class="panel-body">
+						<div id="nfa-external_visits_map"
+							 style="display: none; box-shadow: 3px 3px 1px #dadada; width: 100%; height: 215px; margin-top: 10px; border: 2px solid #999999">
+						</div>
+						<div id="nfa-external_visits_map_cz"
+							 style="display: none; background-color: #f7f7f7; padding: 10px; font-size: 110%; border: 2px solid #999999; box-shadow: 3px 3px 1px #dadada;">
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Most Visited Items</strong> <span id="nfa-external_accessed_url_count"></span></div>
+					<div class="panel-body">
+						<div id="nfa-external_accessed_url"
+							 style="display: none; width: 100%;">
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i> <strong>Hover on the values to see percentages.</strong></div>
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="panel panel-default">
+					<div class="panel-heading"><strong>Most Downloaded Bitstreams</strong> <span id="nfa-external_download_url_count"></span></div>
+					<div class="panel-body">
+						<div id="nfa-external_download_url"
+							 style="display: none; width: 100%;">
+							<div class='alert alert-info'><i class="fa fa-info-circle"></i>&nbsp;
+								<strong>Hover on the values to see percentages.</strong>
+								<br>
+								<strong>Clicking on a link will take you to the item page of the particular bitstream.</strong>
+							</div>
+							<table class="table table-striped most_accessed">
+								<thead></thead>
+								<tbody></tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 	<div role="tabpanel" class="tab-pane" id="services">
 		<div class="alert alert-warning">
 			<strong>
