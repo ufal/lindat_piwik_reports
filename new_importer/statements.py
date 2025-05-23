@@ -53,21 +53,13 @@ SELECT location_country, count(distinct v.idvisit) as visits, count( DISTINCT v.
 # The piwik_charts actually calls these "Unique views", but looks for nb_visits. We are modifying the name (removing
 # url params) so there might be multiple idaction involved.
 
-# No window functions/partition by in mysql 5.5;
-# so the inner most select grabs the data and orders them
-# the next one numbers the rows for given year-month combination
-# the outer most selects the top N rows for the year-month combination
+# the inner most select grabs the data and numbers the rows for given year-month combination
+# the outer most selects the top N rows when ordered by hits
 top_urls_by_month = """
-set @my_row_number = 0;
-set @last_date = '';
 SELECT hits, visits, year, month, name, my_row_number FROM (
-SELECT hits, visits, year, month, name,
-    @my_row_number:=CASE
-        WHEN @last_date = concat(year, '-', month) then @my_row_number + 1
-        ELSE 0
-    END as my_row_number,
-    @last_date:=concat(year, '-', month) FROM (
-SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(server_time) as year, MONTH(server_time) as month, substring_index(name, '?', 1) as name
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(server_time) as year, 
+       MONTH(server_time) as month, substring_index(name, '?', 1) as name,
+       ROW_NUMBER() OVER(PARTITION BY YEAR(server_time), MONTH(server_time) ORDER BY COUNT(*) DESC) AS my_row_number
     FROM piwik_log_link_visit_action v
     LEFT JOIN piwik_log_visit USING(idvisit)
     LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
@@ -75,21 +67,15 @@ SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(serv
     AND server_time >= '2014-01-01'
     {}
     GROUP BY year, month, substring_index(name, '?', 1)
-    order by year, month, hits desc
- ) data ) data_numbered where my_row_number < 100;
+ ) data_numbered where my_row_number <= 100
+   order by year, month, hits desc;
 """
 
 top_urls_by_year = """
-set @my_row_number = 0;
-set @last_date = '';
 SELECT hits, visits, year, name, my_row_number FROM (
-SELECT hits, visits, year, name,
-    @my_row_number:=CASE
-        WHEN @last_date = year then @my_row_number + 1
-        ELSE 0
-    END as my_row_number,
-    @last_date:=year FROM (
-SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(server_time) as year, substring_index(name, '?', 1) as name
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(server_time) as year, 
+       substring_index(name, '?', 1) as name,
+       ROW_NUMBER() OVER(PARTITION BY YEAR(server_time) ORDER BY COUNT(*) DESC) AS my_row_number
     FROM piwik_log_link_visit_action v
     LEFT JOIN piwik_log_visit USING(idvisit)
     LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
@@ -97,8 +83,8 @@ SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(serv
     AND server_time >= '2014-01-01'
     {}
     GROUP BY year, substring_index(name, '?', 1)
-    order by year, hits desc
- ) data ) data_numbered where my_row_number < 100;
+ ) data_numbered where my_row_number <= 100
+   order by year, hits desc;
 """
 
 top_urls_total = """
@@ -139,29 +125,23 @@ SELECT if(substring(name, locate('handle', name) + 7) like '%/%/%',
 """
 
 handles_country = """
-set @my_row_number=0;
-set @last_group = '';
-SELECT handle, location_country, visits, year, month, my_row_number FROM
-(
-SELECT handle, location_country, visits, year, month,     
-    @my_row_number:=CASE
-    WHEN @last_group = CONCAT(handle, '/', year, '-', month) THEN @my_row_number + 1
-    ELSE 0
-    END as my_row_number,
-    @last_group:=CONCAT(handle, '/', year, '-', month) FROM
-(
-SELECT substring_index(substring_index(if(substring(name, locate('handle', name) + 7) like '%/%/%',
-            substring_index(substring(name, locate('handle', name) + 7), '/', 2),
-            substring(name, locate('handle', name) + 7)), '?', 1), '#', 1) as handle,
-       location_country, count( DISTINCT v.idvisit) as visits, YEAR(server_time) as year, MONTH(server_time) as month
+WITH handle_country AS (
+    SELECT substring_index(substring_index(if(substring(name, locate('handle', name) + 7) like '%/%/%',
+                                              substring_index(substring(name, locate('handle', name) + 7), '/', 2),
+                                              substring(name, locate('handle', name) + 7)), '?', 1), '#', 1) as handle,
+           location_country, v.idvisit as idvisit, YEAR(server_time) as year, MONTH(server_time) as month
     FROM piwik_log_visit v
     LEFT JOIN piwik_log_link_visit_action ON v.idvisit = piwik_log_link_visit_action.idvisit
     LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
-            WHERE server_time >= '2014-01-01' and v.idsite=2 and name like 'lindat.%cz/repository/%handle/%/%'
-                        GROUP BY handle, location_country, year, month
-            ORDER BY handle, year, month, visits desc
-) data ) data_numbered where my_row_number < 10                       
-    ;
+    WHERE server_time >= '2014-01-01' and v.idsite=2 and name like 'lindat.%cz/repository/%handle/%/%'
+)
+SELECT handle, location_country, visits, year, month, my_row_number FROM (
+SELECT handle, location_country, count( DISTINCT idvisit) as visits, year, month,
+    ROW_NUMBER() OVER(PARTITION BY handle, year, month ORDER BY COUNT(DISTINCT idvisit) DESC) AS my_row_number
+    FROM handle_country
+    GROUP BY handle, location_country, year, month
+) data_numbered where my_row_number <= 10
+  ORDER BY handle, year, month, visits desc;
 """
 
 ##### /handles #####
