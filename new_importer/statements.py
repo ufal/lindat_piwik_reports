@@ -1,5 +1,33 @@
 from config import NFA_RANGE, MFF_RANGE
 
+# CONSTANTS:
+# https://developer.matomo.org/guides/database-schema#log-data-persistence-action-types
+# type = 1: Piwik\Tracker\Action::TYPE_PAGE_URL = 1: the action is a URL to a page on the website being tracked.
+
+# TODO custom dimensions
+# TODO fix like patterns for handles and urls
+# TODO try deep diff on the results https://zepworks.com/deepdiff/current/commandline.html
+
+# NOTE:
+# before the TEMP TABLE there were two "types" of queries:
+# FROM piwik_log_visit v LEFT JOIN piwik_log_link_visit_action USING(idvisit) LEFT JOIN piwik_log_action ON...
+# and
+# FROM piwik_log_link_visit_action v LEFT JOIN piwik_log_visit USING(idvisit) LEFT JOIN piwik_log_action ON...
+# there seem to be some difference in the results, but these seem to be negligible in practical cases where we filter
+# on server_time >= '2014-01-01'
+# this leaves some idvisits that are not in log_visit (which seems to be a data integrity issue).
+# on 2025-07-16 there were 35 such unique idvisits or 635 rows in the joined table
+
+temporary_table = """
+CREATE TEMPORARY TABLE joined_visit_action
+SELECT idvisit, idaction, v.idsite as idsite, server_time, YEAR(server_time) as year, MONTH(server_time) as month,
+       DAY(server_time) as day, type, v.idvisitor as idvisitor, location_country, name
+FROM piwik_log_visit v
+         LEFT JOIN piwik_log_link_visit_action USING(idvisit)
+         LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
+;
+"""
+
 # The ROLLUP creates (sub)totals based on the grouping columns; these will have NULL in that column; eg. if year,
 # month, day and idsite are NULL this is the grand total across all ymd and sites
 # The queries can be filtered to only return the (sub)totals using:
@@ -8,11 +36,8 @@ from config import NFA_RANGE, MFF_RANGE
 # (AND returns null if any of the operands is null)
 # ; but that doesn't seem to be faster than without the filtering
 hits_visits_aggregated = """
-SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as uniq_pageviews, v.idsite, YEAR(server_time) as year, 
-MONTH(server_time) as month, DAY(server_time) as day
-    FROM piwik_log_link_visit_action v
-    LEFT JOIN piwik_log_visit USING(idvisit)
-        LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as uniq_pageviews, v.idsite, year, month, day
+    FROM joined_visit_action v
             WHERE type = 1 AND server_time >= '2014-01-01' {}
                         GROUP BY year, month, day, v.idsite WITH ROLLUP;
 """
@@ -23,11 +48,8 @@ MONTH(server_time) as month, DAY(server_time) as day
 # reason there are many (at the time of writing almost twice as many) idvisitor in log_link_visit_action that are not
 # in log_visit
 visits_visitors = """
-SELECT count(DISTINCT v.idvisit) as visits, count( DISTINCT v.idvisitor) as visitors,
- v.idsite, YEAR(server_time) as year, MONTH(server_time) as month, DAY(server_time) as day
-    FROM piwik_log_visit v
-    LEFT JOIN piwik_log_link_visit_action ON v.idvisit = piwik_log_link_visit_action.idvisit
-    LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
+SELECT count(DISTINCT v.idvisit) as visits, count( DISTINCT v.idvisitor) as visitors, v.idsite, year,  month, day
+    FROM joined_visit_action v
             WHERE server_time >= '2014-01-01' {}
                         GROUP BY year, month, day, v.idsite WITH ROLLUP;
 """
@@ -35,10 +57,8 @@ SELECT count(DISTINCT v.idvisit) as visits, count( DISTINCT v.idvisitor) as visi
 # Not sure we actually need the visitors here
 visits_countries = """
 SELECT location_country, count(distinct v.idvisit) as visits, count( DISTINCT v.idvisitor) as visitors,  
- v.idsite, YEAR(server_time) as year, MONTH(server_time) as month, DAY(server_time) as day
-    FROM piwik_log_visit v
-    LEFT JOIN piwik_log_link_visit_action ON v.idvisit = piwik_log_link_visit_action.idvisit
-    LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
+ v.idsite, year, month, day
+    FROM joined_visit_action v
             WHERE server_time >= '2014-01-01' {}
                         GROUP BY location_country, year, month, day, v.idsite WITH ROLLUP
                         HAVING location_country IS NOT NULL AND
@@ -57,12 +77,10 @@ SELECT location_country, count(distinct v.idvisit) as visits, count( DISTINCT v.
 # the outer most selects the top N rows when ordered by hits
 top_urls_by_month = """
 SELECT hits, visits, year, month, name, my_row_number FROM (
-SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(server_time) as year, 
-       MONTH(server_time) as month, substring_index(name, '?', 1) as name,
-       ROW_NUMBER() OVER(PARTITION BY YEAR(server_time), MONTH(server_time) ORDER BY COUNT(*) DESC) AS my_row_number
-    FROM piwik_log_link_visit_action v
-    LEFT JOIN piwik_log_visit USING(idvisit)
-    LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, year, 
+       month, substring_index(name, '?', 1) as name,
+       ROW_NUMBER() OVER(PARTITION BY year, month ORDER BY COUNT(*) DESC) AS my_row_number
+    FROM joined_visit_action v
     WHERE type = 1
     AND server_time >= '2014-01-01'
     {}
@@ -73,12 +91,10 @@ SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(serv
 
 top_urls_by_year = """
 SELECT hits, visits, year, name, my_row_number FROM (
-SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(server_time) as year, 
+SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, year, 
        substring_index(name, '?', 1) as name,
-       ROW_NUMBER() OVER(PARTITION BY YEAR(server_time) ORDER BY COUNT(*) DESC) AS my_row_number
-    FROM piwik_log_link_visit_action v
-    LEFT JOIN piwik_log_visit USING(idvisit)
-    LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
+       ROW_NUMBER() OVER(PARTITION BY year ORDER BY COUNT(*) DESC) AS my_row_number
+    FROM joined_visit_action v
     WHERE type = 1
     AND server_time >= '2014-01-01'
     {}
@@ -89,9 +105,7 @@ SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, YEAR(serv
 
 top_urls_total = """
 SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, substring_index(name, '?', 1) as name
-    FROM piwik_log_link_visit_action v
-    LEFT JOIN piwik_log_visit USING(idvisit)
-    LEFT JOIN piwik_log_action ON piwik_log_action.idaction = v.idaction_url
+    FROM joined_visit_action v
     WHERE type = 1
     AND server_time >= '2014-01-01'
     {}
@@ -112,14 +126,12 @@ SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, substring
 # the query removes url params and the domain (ie. lindat.cz and lindat.mff.cuni.cz will be grouped together)
 handles = """
 select substring_index(substring_index(hdl, '?', 1), '#', 1) as handle, name, idvisit, idaction, concat(idvisit,'/',idaction) as visit_action, hex(idvisitor) as 
-idvisitor, idsite, YEAR(server_time) as year, MONTH(server_time) as month, DAY(server_time) as day FROM (
+idvisitor, idsite, year, month, day FROM (
 SELECT if(substring(name, locate('handle', name) + 7) like '%/%/%',
             substring_index(substring(name, locate('handle', name) + 7), '/', 2),
             substring(name, locate('handle', name) + 7)) as hdl,
     substring_index(replace(name, 'lindat.cz', 'lindat.mff.cuni.cz'), '?', 1) as name, v.idvisit, idaction, v.idsite, v.idvisitor, server_time
-    FROM piwik_log_visit v
-    LEFT JOIN piwik_log_link_visit_action ON v.idvisit = piwik_log_link_visit_action.idvisit
-    LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
+    FROM joined_visit_action v
             WHERE type = 1 AND server_time >= '2014-01-01' {} 
     ) visits_actions
 """
@@ -129,10 +141,8 @@ WITH handle_country AS (
     SELECT substring_index(substring_index(if(substring(name, locate('handle', name) + 7) like '%/%/%',
                                               substring_index(substring(name, locate('handle', name) + 7), '/', 2),
                                               substring(name, locate('handle', name) + 7)), '?', 1), '#', 1) as handle,
-           location_country, v.idvisit as idvisit, YEAR(server_time) as year, MONTH(server_time) as month
-    FROM piwik_log_visit v
-    LEFT JOIN piwik_log_link_visit_action ON v.idvisit = piwik_log_link_visit_action.idvisit
-    LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
+           location_country, v.idvisit as idvisit, year, month
+    FROM joined_visit_action v
     WHERE server_time >= '2014-01-01' and v.idsite=2 and name like 'lindat.%cz/repository/%handle/%/%'
 )
 SELECT handle, location_country, visits, year, month, my_row_number FROM (
