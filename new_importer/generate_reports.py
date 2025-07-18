@@ -19,9 +19,10 @@ log.basicConfig(level=getattr(log, lvl.upper(), None))
 
 #segments = ['mff-repository-internal-views', 'mff-repository-internal-downloads', 'mff-repository-external-downloads', 'mff-repository-external-views', 'nfa-repository-internal-views', 'nfa-repository-internal-downloads', 'nfa-repository-external-downloads', 'nfa-repository-external-views']
 segments = segment2where.keys() - ['handle-views', 'handle-downloads']
-handle_pattern = re.compile('.*handle/([-\w+.]+)/([-\w+.]+)/?.*', re.ASCII)
+handle_pattern = re.compile(r'.*handle/([-\w+.]+)/([-\w+.]+)/?.*', re.ASCII)
 # basically url unreserved, ~ is removed, +/ are added
 allowed_chars = set(string.ascii_letters).union(set(string.digits)).union(set('-._+/'))
+uuid_regex = re.compile(r'.*[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[1-5a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}.*')
 
 
 def _fetch_and_write(cursor, stats_kind):
@@ -321,6 +322,10 @@ def _sensible_handle_filter(handle, name):
         hdl_prefix, hdl_suffix = handle.split('/')
         if hdl_prefix[-1] == '.' or hdl_suffix[-1] == '.':
             return False
+        # this is here for v7 names, hoping the custom_dimension has a sensible value
+        if uuid_regex.match(name):
+            return True
+        # this won't work with v7
         m = handle_pattern.match(name)
         if m:
             extracted_hdl_prefix, extracted_hdl_suffix = m.groups()
@@ -425,6 +430,11 @@ def main():
         db = mysql.connector.connect(**db_config)
         cursor = db.cursor(dictionary=True)
         start_time = time.perf_counter()
+        cursor.execute(statements['temporary_table'])
+        rows = cursor.fetchall()
+        log.info("Temporary table created.")
+        log.info(rows)
+
         # These are for /statistics report
         get_views(cursor)
         get_visits(cursor)

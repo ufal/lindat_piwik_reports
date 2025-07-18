@@ -4,8 +4,6 @@ from config import NFA_RANGE, MFF_RANGE
 # https://developer.matomo.org/guides/database-schema#log-data-persistence-action-types
 # type = 1: Piwik\Tracker\Action::TYPE_PAGE_URL = 1: the action is a URL to a page on the website being tracked.
 
-# TODO custom dimensions
-# TODO fix like patterns for handles and urls
 # TODO try deep diff on the results https://zepworks.com/deepdiff/current/commandline.html
 
 # NOTE:
@@ -18,10 +16,23 @@ from config import NFA_RANGE, MFF_RANGE
 # this leaves some idvisits that are not in log_visit (which seems to be a data integrity issue).
 # on 2025-07-16 there were 35 such unique idvisits or 635 rows in the joined table
 
+# Use custom_dimension_1 if present (but get rid of http://hdl.handle.net/) - this is in v7
+# if not present, try to extract the handle from the name field (this is v5 repository/xmlui/handle/... etc.)
+# '%/%/%' -> if e.g. .../handle/prefix/sufix/allzip get everything to the left of the second slash
+# else get everything after 'handle/' (which is 7 characters long)
+# we are filtering on name contains 'handle'
+
 temporary_table = """
 CREATE TEMPORARY TABLE joined_visit_action
 SELECT idvisit, idaction, v.idsite as idsite, server_time, YEAR(server_time) as year, MONTH(server_time) as month,
-       DAY(server_time) as day, type, v.idvisitor as idvisitor, location_country, name
+       DAY(server_time) as day, type, v.idvisitor as idvisitor, location_country, location_ip, name,
+       if(piwik_log_link_visit_action.custom_dimension_1 IS NOT NULL,
+           substring_index(piwik_log_link_visit_action.custom_dimension_1, '/', -2),
+           if(name like 'lindat%.cz%/handle/%/%',
+               substring_index(substring_index(if(substring(name, locate('handle', name) + 7) like '%/%/%',
+                                          substring_index(substring(name, locate('handle', name) + 7), '/', 2),
+                                          substring(name, locate('handle', name) + 7)), '?', 1), '#', 1),
+               NULL)) as handle
 FROM piwik_log_visit v
          LEFT JOIN piwik_log_link_visit_action USING(idvisit)
          LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
@@ -125,25 +136,17 @@ SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, substring
 # substring_index(hdl, '?', 1) ~ search for first '?' in hdl and return all to the left of it
 # the query removes url params and the domain (ie. lindat.cz and lindat.mff.cuni.cz will be grouped together)
 handles = """
-select substring_index(substring_index(hdl, '?', 1), '#', 1) as handle, name, idvisit, idaction, concat(idvisit,'/',idaction) as visit_action, hex(idvisitor) as 
-idvisitor, idsite, year, month, day FROM (
-SELECT if(substring(name, locate('handle', name) + 7) like '%/%/%',
-            substring_index(substring(name, locate('handle', name) + 7), '/', 2),
-            substring(name, locate('handle', name) + 7)) as hdl,
-    substring_index(replace(name, 'lindat.cz', 'lindat.mff.cuni.cz'), '?', 1) as name, v.idvisit, idaction, v.idsite, v.idvisitor, server_time
+select handle, substring_index(replace(name, 'lindat.cz', 'lindat.mff.cuni.cz'), '?', 1) as name, idvisit, idaction,
+        concat(idvisit,'/',idaction) as visit_action, hex(idvisitor) as idvisitor, idsite, year, month, day
     FROM joined_visit_action v
             WHERE type = 1 AND server_time >= '2014-01-01' {} 
-    ) visits_actions
 """
 
 handles_country = """
 WITH handle_country AS (
-    SELECT substring_index(substring_index(if(substring(name, locate('handle', name) + 7) like '%/%/%',
-                                              substring_index(substring(name, locate('handle', name) + 7), '/', 2),
-                                              substring(name, locate('handle', name) + 7)), '?', 1), '#', 1) as handle,
-           location_country, v.idvisit as idvisit, year, month
+    SELECT handle, location_country, v.idvisit as idvisit, year, month
     FROM joined_visit_action v
-    WHERE server_time >= '2014-01-01' and v.idsite=2 and name like 'lindat.%cz/repository/%handle/%/%'
+    WHERE server_time >= '2014-01-01' and v.idsite=2 and handle IS NOT NULL
 )
 SELECT handle, location_country, visits, year, month, my_row_number FROM (
 SELECT handle, location_country, count( DISTINCT idvisit) as visits, year, month,
@@ -170,45 +173,45 @@ segment2where = {
         AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/services%'
     """,
     'lrt': """
-        AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%LRT%'
+        AND v.idsite = 2 AND handle like '%LRT%'
     """,
     'lrt-downloads': """
-        AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%LRT%'
+        AND v.idsite = 4 AND handle like '%LRT%'
     """,
     'mff-repository-internal-views': f"""
-        AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT name 
-        like '%handle/20.500.12801%' AND {MFF_RANGE}
+        AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT handle 
+        like '20.500.12801/%' AND {MFF_RANGE}
     """,
     'mff-repository-internal-downloads': f"""
-        AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT name 
-        like '%handle/20.500.12801%' AND {MFF_RANGE}
+        AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT handle 
+        like '20.500.12801/%' AND {MFF_RANGE}
     """,
     'mff-repository-external-downloads': f"""
-        AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT name 
-        like '%handle/20.500.12801%' AND NOT {MFF_RANGE}
+        AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT handle 
+        like '20.500.12801/%' AND NOT {MFF_RANGE}
     """,
     'mff-repository-external-views': f"""
-        AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT name 
-        like '%handle/20.500.12801%' AND NOT {MFF_RANGE}
+        AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND NOT handle 
+        like '20.500.12801/%' AND NOT {MFF_RANGE}
     """,
     'nfa-repository-internal-views': f"""
-        AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND name 
-        like '%handle/20.500.12801%' AND {NFA_RANGE}
+        AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND handle 
+        like '20.500.12801/%' AND {NFA_RANGE}
     """,
     'nfa-repository-internal-downloads': f"""
-        AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND name 
-        like '%handle/20.500.12801%' AND {NFA_RANGE}
+        AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND handle 
+        like '20.500.12801/%' AND {NFA_RANGE}
     """,
     'nfa-repository-external-downloads': f"""
-        AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND name 
-        like '%handle/20.500.12801%' AND NOT {NFA_RANGE}
+        AND server_time >= '2023-01-01' AND v.idsite = 4 AND name like 'lindat.mff.cuni.cz/repository%' AND handle 
+        like '20.500.12801/%' AND NOT {NFA_RANGE}
     """,
     'nfa-repository-external-views': f"""
-        AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND name 
-        like '%handle/20.500.12801%' AND NOT {NFA_RANGE}
+        AND server_time >= '2023-01-01' AND v.idsite = 2 AND name like 'lindat.mff.cuni.cz/repository%' AND handle 
+        like '20.500.12801/%' AND NOT {NFA_RANGE}
     """,
     'handle-views': """
-        AND v.idsite=2 AND name like 'lindat.%cz/repository/%handle/%/%'
+        AND v.idsite=2 AND name like 'lindat.%cz/repository/%' and handle IS NOT NULL
     """,
     'handle-downloads': """
         AND v.idsite=4
@@ -223,6 +226,7 @@ statements = {
     'urls_year': top_urls_by_year,
     'urls_month': top_urls_by_month,
     'handles': handles,
-    'handles_country': handles_country
+    'handles_country': handles_country,
+    'temporary_table': temporary_table
 }
 
