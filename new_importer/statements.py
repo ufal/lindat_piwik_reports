@@ -5,6 +5,8 @@ from config import NFA_RANGE, MFF_RANGE
 # type = 1: Piwik\Tracker\Action::TYPE_PAGE_URL = 1: the action is a URL to a page on the website being tracked.
 
 # TODO try deep diff on the results https://zepworks.com/deepdiff/current/commandline.html
+#
+# TODO change the datatype of handle from text to varchar 1k/2k/4k (name has 4k)
 
 # NOTE:
 # before the TEMP TABLE there were two "types" of queries:
@@ -16,6 +18,10 @@ from config import NFA_RANGE, MFF_RANGE
 # this leaves some idvisits that are not in log_visit (which seems to be a data integrity issue).
 # on 2025-07-16 there were 35 such unique idvisits or 635 rows in the joined table
 
+# the domain (ie. lindat.cz and lindat.mff.cuni.cz will be grouped together)
+# the handle is converted to uppercase (our handle server ignores case and so does mysql -
+# mysql by default is case insensitive (_ci collation - https://dev.mysql.com/doc/refman/8.4/en/case-sensitivity.html))
+
 # Use custom_dimension_1 if present (but get rid of http://hdl.handle.net/) - this is in v7
 # if not present, try to extract the handle from the name field (this is v5 repository/xmlui/handle/... etc.)
 # '%/%/%' -> if e.g. .../handle/prefix/sufix/allzip get everything to the left of the second slash
@@ -25,14 +31,17 @@ from config import NFA_RANGE, MFF_RANGE
 temporary_table = """
 CREATE TEMPORARY TABLE joined_visit_action
 SELECT idvisit, idaction, v.idsite as idsite, server_time, YEAR(server_time) as year, MONTH(server_time) as month,
-       DAY(server_time) as day, type, v.idvisitor as idvisitor, location_country, location_ip, name,
+       DAY(server_time) as day, type, v.idvisitor as idvisitor, location_country, location_ip,
+       replace(name, 'lindat.cz', 'lindat.mff.cuni.cz') as name,
+       UPPER(
        if(piwik_log_link_visit_action.custom_dimension_1 IS NOT NULL,
            substring_index(piwik_log_link_visit_action.custom_dimension_1, '/', -2),
            if(name like 'lindat%.cz%/handle/%/%',
                substring_index(substring_index(if(substring(name, locate('handle', name) + 7) like '%/%/%',
                                           substring_index(substring(name, locate('handle', name) + 7), '/', 2),
                                           substring(name, locate('handle', name) + 7)), '?', 1), '#', 1),
-               NULL)) as handle
+               NULL))
+       ) as handle
 FROM piwik_log_visit v
          LEFT JOIN piwik_log_link_visit_action USING(idvisit)
          LEFT JOIN piwik_log_action ON piwik_log_action.idaction = piwik_log_link_visit_action.idaction_url
@@ -134,9 +143,9 @@ SELECT count(*) as hits, count( DISTINCT idvisit, idaction) as visits, substring
 # not using rollup; can't get all the needed combinations without GROUPING SETS, the grouping is done in code with pandas
 # visits may be higher due to javascript (see the # cleanup); handle is derived from the url there might be unsafe chars
 # substring_index(hdl, '?', 1) ~ search for first '?' in hdl and return all to the left of it
-# the query removes url params and the domain (ie. lindat.cz and lindat.mff.cuni.cz will be grouped together)
+# the query removes url params
 handles = """
-select handle, substring_index(replace(name, 'lindat.cz', 'lindat.mff.cuni.cz'), '?', 1) as name, idvisit, idaction,
+select handle, substring_index(name, '?', 1) as name, idvisit, idaction,
         concat(idvisit,'/',idaction) as visit_action, hex(idvisitor) as idvisitor, idsite, year, month, day
     FROM joined_visit_action v
             WHERE type = 1 AND server_time >= '2014-01-01' {} 
