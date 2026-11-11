@@ -429,6 +429,10 @@ def main():
     try:
         db = mysql.connector.connect(**db_config)
         cursor = db.cursor(dictionary=True)
+        # Under the default REPEATABLE READ, CREATE ... SELECT takes shared next-key locks on every row it reads
+        # from the log tables, which blocks the tracker's INSERT/UPDATEs for the whole (long) scan; the stalled
+        # tracker requests then exhaust max_connections. READ COMMITTED makes it a lock-free consistent read.
+        cursor.execute("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED")
         start_time = time.perf_counter()
         cursor.execute(statements['temporary_table'])
         rows = cursor.fetchall()
